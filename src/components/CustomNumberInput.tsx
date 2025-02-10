@@ -76,7 +76,7 @@ const CustomNumberInput = ({
         type="button"
         onClick={handleDecrement}
         disabled={isAtMin}
-        className={`h-7 w-7 flex items-center justify-center rounded-l-md border-r transition ${
+        className={`h-6 w-6 flex items-center justify-center rounded-l-md border-r transition ${
           isAtMin 
             ? "text-gray-300 cursor-not-allowed" 
             : "text-gray-500 hover:text-pink-500 hover:bg-gray-50"
@@ -89,13 +89,13 @@ const CustomNumberInput = ({
         value={internalValue}
         onChange={handleChange}
         onBlur={handleBlur}
-        className="w-12 text-sm text-center font-medium outline-none"
+        className="w-12 text-[12px] text-gray-500 text-center font-medium outline-none"
       />
       <button
         type="button"
         onClick={handleIncrement}
         disabled={isAtMax}
-        className={`h-7 w-7 flex items-center justify-center rounded-r-md border-l transition ${
+        className={`h-6 w-6 flex items-center justify-center rounded-r-md border-l transition ${
           isAtMax 
             ? "text-gray-300 cursor-not-allowed" 
             : "text-gray-500 hover:text-pink-500 hover:bg-gray-50"

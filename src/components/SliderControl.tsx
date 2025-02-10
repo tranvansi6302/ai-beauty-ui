@@ -2,7 +2,7 @@ import { Info, Settings } from "lucide-react";
 import { Popover } from "@headlessui/react";
 import CustomNumberInput from "./CustomNumberInput";
 
-type SliderProps = {
+interface SliderControlProps {
   label: string;
   value: number;
   min: number;
@@ -11,9 +11,10 @@ type SliderProps = {
   onDragStart?: () => void;
   onDragEnd?: () => void;
   description?: string;
-};
+  className?: string;
+}
 
-export function SliderControl({
+export const SliderControl = ({
   label,
   value,
   min,
@@ -22,16 +23,17 @@ export function SliderControl({
   onDragStart,
   onDragEnd,
   description,
-}: SliderProps) {
+  className
+}: SliderControlProps) => {
   return (
-    <div className="space-y-3 bg-gray-50/50 p-4 rounded-xl">
-      <div className="flex justify-between items-center">
-        <div className="flex items-center gap-1.5">
+    <div className={`space-y-3 ${className}`}>
+      <div className="flex justify-between items-center gap-2">
+        <div className="flex items-center gap-2">
           <label className="text-sm font-medium text-gray-700">{label}</label>
           {description && (
             <Popover className="relative">
               <Popover.Button className="text-gray-400 hover:text-gray-500 focus:outline-none">
-                <Info size={16} />
+                <Info size={14} className="text-gray-500 mt-1 hover:text-pink-500"/>
               </Popover.Button>
 
               <Popover.Panel className="absolute z-10 bottom-full left-0 mb-1">
@@ -66,7 +68,16 @@ export function SliderControl({
             </Popover>
           )}
         </div>
-        <CustomNumberInput value={value} onChange={onChange} min={min} max={max} />
+        {/* Hidden mobile */}
+       <div className="hidden md:block">
+       <CustomNumberInput 
+          value={value} 
+          onChange={onChange} 
+          min={min} 
+          max={max} 
+          className="scale-100"
+        />
+       </div>
       </div>
       <input
         type="range"
@@ -78,8 +89,8 @@ export function SliderControl({
         onTouchStart={onDragStart}
         onTouchEnd={onDragEnd}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-pink-500 hover:accent-pink-600 transition-all"
+        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-pink-500 hover:accent-pink-600 transition-all"
       />
     </div>
   );
-}
+};

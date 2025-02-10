@@ -5,7 +5,8 @@ import {
   Image as ImageIcon,
   Info,
   Upload,
-  Wand
+  Wand,
+  ArrowLeft
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -32,14 +33,14 @@ export const WorkplaceClient = () => {
   };
 
   return (
-    <div className="max-w-[1300px] mx-auto px-4 py-4 sm:py-8 mt-12">
+    <div className="max-w-[1400px] mx-auto">
       {/* Breadcrumb */}
       <div className="mt-4 lg:mt-0 flex items-center mb-6 text-[14px] px-4 lg:px-0">
-        <Link href="/" className="text-gray-500 hover:text-gray-700">
-          Trang chủ
+        <Link href="/" className="text-gray-500 hover:text-gray-700 flex items-center gap-2 mt-6">
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Quay về trang chủ
         </Link>
-        <span className="mx-2 text-gray-400">›</span>
-        <span className="text-gray-900">Không gian của tôi</span>
+       
       </div>
 
       <div className="rounded-xl border border-gray-200">
