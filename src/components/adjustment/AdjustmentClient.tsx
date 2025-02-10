@@ -1,31 +1,69 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable react-hooks/exhaustive-deps */
 'use client';
 import { debounce } from 'lodash';
-import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useState, useRef } from 'react';
-import { Controls } from './Controls';
-import { ImageComparison } from './ImageComparison';
-import { ToolBar } from './ToolBar';
-import { AdjustmentData, MAKEUP_MAP } from './types';
-import { Resizer } from './Resizer';
 import { ArrowLeft, Settings2 } from 'lucide-react';
 import Link from 'next/link';
-const DEFAULT_CONTROLS = {
-     definition: 0,
-     resize_horizontal: 120,
-     resize_vertical: 200,
-     resize_position_up: -100,
-     resize_position_left: -35,
-     resize_position_right: -60,
-     rotate_left: 10,
-     rotate_right: -10,
-};
+import { useRouter } from 'next/navigation';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { eyebrow_left_path_1 } from './base64_eyebrow_left_1';
+import { Controls } from './Controls';
+import { ImageComparison } from './ImageComparison';
+import { Resizer } from './Resizer';
+import { ToolBar } from './ToolBar';
+import { AdjustmentData, MAKEUP_MAP } from './types';
+import { eyebrowData } from './data';
 
 export const AdjustmentClient = () => {
      const router = useRouter();
      const [image, setImage] = useState<string | null>(null);
      const [cleanedImage, setCleanedImage] = useState<string>('');
      const [selectedMakeup, setSelectedMakeup] = useState<string[]>([]);
-     const [controls, setControls] = useState(DEFAULT_CONTROLS);
+
+     // Định nghĩa controls state với kiểu dữ liệu đầy đủ
+     type ControlsType = {
+          definition: 'SHARPEN' | 'SMOOTH';
+          resize_horizontal: number;
+          resize_vertical: number;
+          resize_position_up: number;
+          resize_position_left: number;
+          resize_position_right: number;
+          rotate_left: number;
+          rotate_right: number;
+          resize_scale_left: number;
+          resize_scale_right: number;
+          color_skin: number;
+          color_lips_r: number;
+          color_lips_g: number;
+          color_lips_b: number;
+          color_blush_r: number;
+          color_blush_g: number;
+          color_blush_b: number;
+     };
+
+     const [controls, setControls] = useState<ControlsType>({
+          // Các giá trị mặc định cho chân mày
+          definition: 'SHARPEN',
+          resize_horizontal: 120,
+          resize_vertical: 200,
+          resize_position_up: -100,
+          resize_position_left: -35,
+          resize_position_right: -60,
+          rotate_left: 10,
+          rotate_right: -10,
+          resize_scale_left: 1.0,
+          resize_scale_right: 1.0,
+
+          // Các giá trị mặc định cho trang điểm
+          color_skin: 0.75,
+          color_lips_r: 174,
+          color_lips_g: 86,
+          color_lips_b: 84,
+          color_blush_r: 174,
+          color_blush_g: 86,
+          color_blush_b: 84,
+     });
+
      const [removeEyebrows, setRemoveEyebrows] = useState(true);
      const [showLandmarks, setShowLandmarks] = useState(false);
      const [coefficient] = useState(0.75);
@@ -44,13 +82,23 @@ export const AdjustmentClient = () => {
      const imageRef = useRef<HTMLDivElement>(null);
      const [imageHeight, setImageHeight] = useState<number>(0);
 
-     useEffect(() => {
-          setControls(DEFAULT_CONTROLS);
-     }, []);
+     const previousRequest = useRef<AbortController | null>(null);
+     const [isPickingColor, setIsPickingColor] = useState(false);
+
+     const [selectedEyebrow, setSelectedEyebrow] = useState(
+          eyebrowData[0].path
+     );
 
      const callAdjustmentAPI = useCallback(
-          async (data: AdjustmentData) => {
+          debounce(async (data: AdjustmentData) => {
                if (!cleanedImage) return;
+
+               if (previousRequest.current) {
+                    previousRequest.current.abort();
+               }
+
+               const controller = new AbortController();
+               previousRequest.current = controller;
 
                try {
                     setIsLoading(true);
@@ -64,15 +112,15 @@ export const AdjustmentClient = () => {
                               body: JSON.stringify({
                                    input_image_path: cleanedImage,
                                    patch_path: '',
-                                   eyebrow_left_path: '',
-                                   eyebrow_right_path: '',
+                                   eyebrow_left_path: data.eyebrow_left_path,
+                                   eyebrow_right_path: data.eyebrow_right_path,
                                    output_image_path:
                                         'data/output_images/portrait_new_eyebrows',
                                    apply_makeup: data.apply_makeup,
-                                   coefficient: data.coefficient,
-                                   remove_eyebrows: data.remove_eyebrows,
                                    features: data.features,
                                    show_landmarks: data.show_landmarks,
+                                   remove_eyebrows: data.remove_eyebrows,
+                                   anchor: 'center',
                                    definition: data.definition,
                                    resize_horizontal: data.resize_horizontal,
                                    resize_vertical: data.resize_vertical,
@@ -83,7 +131,23 @@ export const AdjustmentClient = () => {
                                         data.resize_position_right,
                                    rotate_left: data.rotate_left,
                                    rotate_right: data.rotate_right,
+                                   resize_scale_left:
+                                        controls.resize_scale_left,
+                                   resize_scale_right:
+                                        controls.resize_scale_right,
+                                   color_skin: controls.color_skin,
+                                   color_lips: [
+                                        controls.color_lips_r,
+                                        controls.color_lips_g,
+                                        controls.color_lips_b,
+                                   ],
+                                   color_blush: [
+                                        controls.color_blush_r,
+                                        controls.color_blush_g,
+                                        controls.color_blush_b,
+                                   ],
                               }),
+                              signal: controller.signal,
                          }
                     );
 
@@ -97,13 +161,17 @@ export const AdjustmentClient = () => {
                               `data:image/jpeg;base64,${result.output_image_path}`
                          );
                     }
-               } catch (error) {
-                    console.error('API Error:', error);
+               } catch (error: unknown) {
+                    if (error instanceof Error && error.name !== 'AbortError') {
+                         console.error('API Error:', error);
+                    }
                } finally {
-                    setIsLoading(false);
+                    if (previousRequest.current === controller) {
+                         setIsLoading(false);
+                    }
                }
-          },
-          [cleanedImage]
+          }, 300),
+          [cleanedImage, controls, selectedEyebrow]
      );
 
      useEffect(() => {
@@ -121,50 +189,54 @@ export const AdjustmentClient = () => {
           setCleanedImage(cleaned);
 
           const initialData: AdjustmentData = {
-               features: {},
-               coefficient,
-               show_landmarks: showLandmarks,
-               remove_eyebrows: removeEyebrows,
-               definition: 0,
-               resize_horizontal: 0,
-               resize_vertical: 0,
-               resize_position_up: 0,
-               resize_position_left: 0,
-               resize_position_right: 0,
-               rotate_left: 0,
-               rotate_right: 0,
+               input_image_path: cleaned,
+               output_image_path: 'data/output_images/portrait_new_eyebrows',
+               patch_path: '',
+               features: [], // Mảng rỗng vì chưa chọn trang điểm nào
+               show_landmarks: false,
+               color_lips: [174, 86, 84], // Giá trị mặc định cho màu môi
+               color_skin: 0.75, // Giá trị mặc định cho màu da
+               color_blush: [174, 86, 84], // Giá trị mặc định cho má hồng
+               eyebrow_left_path: eyebrow_left_path_1,
+               eyebrow_right_path: '',
+               remove_eyebrows: false,
                apply_makeup: false,
+               resize_scale_left: 1.0,
+               resize_scale_right: 1.0,
+               anchor: 'center',
+               definition: 'SHARPEN',
+               resize_horizontal: 120,
+               resize_vertical: 200,
+               resize_position_up: -100,
+               resize_position_left: -35,
+               resize_position_right: -60,
+               rotate_left: 10,
+               rotate_right: -10,
           };
 
           callAdjustmentAPI(initialData);
-     }, [
-          router,
-          coefficient,
-          showLandmarks,
-          removeEyebrows,
-          callAdjustmentAPI,
-     ]);
+     }, [router, showLandmarks, removeEyebrows, callAdjustmentAPI]);
 
      useEffect(() => {
-          if (!isDragging && cleanedImage) {
+          if (!isDragging && !isPickingColor && cleanedImage) {
+               const features = [];
+               if (selectedMakeup.includes('Môi')) features.push('lips');
+               if (selectedMakeup.includes('Da')) features.push('skin');
+               if (selectedMakeup.includes('Má')) features.push('blush');
+
                const adjustmentData: AdjustmentData = {
-                    features: selectedMakeup
-                         .map(
-                              (option) =>
-                                   MAKEUP_MAP[option as keyof typeof MAKEUP_MAP]
-                         )
-                         .reduce(
-                              (acc, feature) => ({
-                                   ...acc,
-                                   [feature]: coefficient,
-                              }),
-                              {} as { [key: string]: number }
-                         ),
-                    coefficient,
+                    input_image_path: cleanedImage,
+                    patch_path: '',
+                    eyebrow_left_path: selectedEyebrow,
+                    eyebrow_right_path: '',
+                    output_image_path:
+                         'data/output_images/portrait_new_eyebrows',
+                    apply_makeup: selectedMakeup.length > 0,
+                    features: features,
                     show_landmarks: showLandmarks,
                     remove_eyebrows: removeEyebrows,
-                    apply_makeup: selectedMakeup.length > 0,
-                    definition: controls.definition || 0,
+                    anchor: 'center',
+                    definition: controls.definition || 'SHARPEN',
                     resize_horizontal: controls.resize_horizontal || 0,
                     resize_vertical: controls.resize_vertical || 0,
                     resize_position_up: controls.resize_position_up || 0,
@@ -172,27 +244,38 @@ export const AdjustmentClient = () => {
                     resize_position_right: controls.resize_position_right || 0,
                     rotate_left: controls.rotate_left || 0,
                     rotate_right: controls.rotate_right || 0,
+                    resize_scale_left: controls.resize_scale_left || 1.0,
+                    resize_scale_right: controls.resize_scale_right || 1.0,
+                    color_skin: controls.color_skin || 0.75,
+                    color_lips: [
+                         controls.color_lips_r || 174,
+                         controls.color_lips_g || 86,
+                         controls.color_lips_b || 84,
+                    ],
+                    color_blush: [
+                         controls.color_blush_r || 174,
+                         controls.color_blush_g || 86,
+                         controls.color_blush_b || 84,
+                    ],
                };
 
-               const debouncedCall = debounce(() => {
-                    callAdjustmentAPI(adjustmentData);
-               }, 300);
-
-               debouncedCall();
-
-               return () => {
-                    debouncedCall.cancel();
-               };
+               callAdjustmentAPI(adjustmentData);
           }
+
+          return () => {
+               callAdjustmentAPI.cancel();
+          };
      }, [
           selectedMakeup,
           showLandmarks,
           removeEyebrows,
           controls,
           isDragging,
+          isPickingColor,
           coefficient,
           cleanedImage,
           callAdjustmentAPI,
+          selectedEyebrow,
      ]);
 
      const handleZoomIn = useCallback(() => {
@@ -210,7 +293,25 @@ export const AdjustmentClient = () => {
      }, []);
 
      const handleReset = useCallback(() => {
-          setControls(DEFAULT_CONTROLS);
+          setControls({
+               definition: 'SHARPEN',
+               resize_horizontal: 120,
+               resize_vertical: 200,
+               resize_position_up: -100,
+               resize_position_left: -35,
+               resize_position_right: -60,
+               rotate_left: 10,
+               rotate_right: -10,
+               resize_scale_left: 1.0,
+               resize_scale_right: 1.0,
+               color_skin: 0.75,
+               color_lips_r: 174,
+               color_lips_g: 86,
+               color_lips_b: 84,
+               color_blush_r: 174,
+               color_blush_g: 86,
+               color_blush_b: 84,
+          });
      }, []);
 
      const handleMouseDown = useCallback(
@@ -273,13 +374,80 @@ export const AdjustmentClient = () => {
           );
      }, []);
 
-     const onControlChange = useCallback((name: string, value: number) => {
-          setControls((prev) => ({ ...prev, [name]: value }));
+     const onControlChange = useCallback((name: string, value: any) => {
+          console.log('Before update:', name, value);
+          console.log('Previous controls:', controls);
+          setControls((prev) => {
+               const newControls = {
+                    ...prev,
+                    [name]: value,
+               };
+               console.log('New controls:', newControls);
+               return newControls;
+          });
      }, []);
 
      const handleResize = useCallback((newWidth: number) => {
           setLeftWidth(newWidth);
      }, []);
+
+     const handleEyebrowChange = useCallback(
+          (path: string) => {
+               setSelectedEyebrow(path);
+
+               if (cleanedImage) {
+                    const adjustmentData: AdjustmentData = {
+                         input_image_path: cleanedImage,
+                         patch_path: '',
+                         eyebrow_left_path: path,
+                         eyebrow_right_path: '',
+                         output_image_path:
+                              'data/output_images/portrait_new_eyebrows',
+                         apply_makeup: selectedMakeup.length > 0,
+                         features: selectedMakeup.map(
+                              (option) =>
+                                   MAKEUP_MAP[option as keyof typeof MAKEUP_MAP]
+                         ),
+                         show_landmarks: showLandmarks,
+                         remove_eyebrows: removeEyebrows,
+                         anchor: 'center',
+                         definition: controls.definition || 'SHARPEN',
+                         resize_horizontal: controls.resize_horizontal || 0,
+                         resize_vertical: controls.resize_vertical || 0,
+                         resize_position_up: controls.resize_position_up || 0,
+                         resize_position_left:
+                              controls.resize_position_left || 0,
+                         resize_position_right:
+                              controls.resize_position_right || 0,
+                         rotate_left: controls.rotate_left || 0,
+                         rotate_right: controls.rotate_right || 0,
+                         resize_scale_left: controls.resize_scale_left || 1.0,
+                         resize_scale_right: controls.resize_scale_right || 1.0,
+                         color_skin: controls.color_skin || 0.75,
+                         color_lips: [
+                              controls.color_lips_r || 174,
+                              controls.color_lips_g || 86,
+                              controls.color_lips_b || 84,
+                         ],
+                         color_blush: [
+                              controls.color_blush_r || 174,
+                              controls.color_blush_g || 86,
+                              controls.color_blush_b || 84,
+                         ],
+                    };
+
+                    callAdjustmentAPI(adjustmentData);
+               }
+          },
+          [
+               cleanedImage,
+               controls,
+               selectedMakeup,
+               showLandmarks,
+               removeEyebrows,
+               callAdjustmentAPI,
+          ]
+     );
 
      // Theo dõi height của image
      useEffect(() => {
@@ -338,21 +506,6 @@ export const AdjustmentClient = () => {
           onMouseUp: handleMouseUp,
           onMouseLeave: handleMouseUp,
           isLoading,
-     };
-
-     const controlProps = {
-          showLandmarks,
-          removeEyebrows,
-          selectedMakeup,
-          controls,
-          onLandmarksChange: setShowLandmarks,
-          onEyebrowsChange: setRemoveEyebrows,
-          onMakeupToggle,
-          onControlChange,
-          onDragStart: () => setIsDragging(true),
-          onDragEnd: () => setIsDragging(false),
-          isMobileControlsOpen,
-          onMobileControlsClose: () => setIsMobileControlsOpen(false),
      };
 
      return (
@@ -476,7 +629,56 @@ export const AdjustmentClient = () => {
                                              : 'auto',
                                    }}
                               >
-                                   <Controls {...controlProps} />
+                                   <Controls
+                                        showLandmarks={showLandmarks}
+                                        removeEyebrows={removeEyebrows}
+                                        selectedMakeup={selectedMakeup}
+                                        controls={{
+                                             definition: controls.definition,
+                                             resize_horizontal:
+                                                  controls.resize_horizontal,
+                                             resize_vertical:
+                                                  controls.resize_vertical,
+                                             resize_position_up:
+                                                  controls.resize_position_up,
+                                             resize_position_left:
+                                                  controls.resize_position_left,
+                                             resize_position_right:
+                                                  controls.resize_position_right,
+                                             rotate_left: controls.rotate_left,
+                                             rotate_right:
+                                                  controls.rotate_right,
+                                             color_lips_r:
+                                                  controls.color_lips_r,
+                                             color_lips_g:
+                                                  controls.color_lips_g,
+                                             color_lips_b:
+                                                  controls.color_lips_b,
+                                             color_blush_r:
+                                                  controls.color_blush_r,
+                                             color_blush_g:
+                                                  controls.color_blush_g,
+                                             color_blush_b:
+                                                  controls.color_blush_b,
+                                             color_skin: controls.color_skin,
+                                        }}
+                                        onLandmarksChange={setShowLandmarks}
+                                        onEyebrowsChange={setRemoveEyebrows}
+                                        onMakeupToggle={onMakeupToggle}
+                                        onControlChange={onControlChange}
+                                        onDragStart={() => setIsDragging(true)}
+                                        onDragEnd={() => setIsDragging(false)}
+                                        isMobileControlsOpen={false}
+                                        onMobileControlsClose={() => {}}
+                                        onColorPickerDragStart={() =>
+                                             setIsPickingColor(true)
+                                        }
+                                        onColorPickerDragEnd={() =>
+                                             setIsPickingColor(false)
+                                        }
+                                        selectedEyebrow={selectedEyebrow}
+                                        onEyebrowChange={handleEyebrowChange}
+                                   />
                               </div>
                          </div>
                     </div>
@@ -495,7 +697,27 @@ export const AdjustmentClient = () => {
                               showLandmarks={showLandmarks}
                               removeEyebrows={removeEyebrows}
                               selectedMakeup={selectedMakeup}
-                              controls={controls}
+                              controls={{
+                                   definition: controls.definition,
+                                   resize_horizontal:
+                                        controls.resize_horizontal,
+                                   resize_vertical: controls.resize_vertical,
+                                   resize_position_up:
+                                        controls.resize_position_up,
+                                   resize_position_left:
+                                        controls.resize_position_left,
+                                   resize_position_right:
+                                        controls.resize_position_right,
+                                   rotate_left: controls.rotate_left,
+                                   rotate_right: controls.rotate_right,
+                                   color_lips_r: controls.color_lips_r,
+                                   color_lips_g: controls.color_lips_g,
+                                   color_lips_b: controls.color_lips_b,
+                                   color_blush_r: controls.color_blush_r,
+                                   color_blush_g: controls.color_blush_g,
+                                   color_blush_b: controls.color_blush_b,
+                                   color_skin: controls.color_skin,
+                              }}
                               onLandmarksChange={setShowLandmarks}
                               onEyebrowsChange={setRemoveEyebrows}
                               onMakeupToggle={onMakeupToggle}
@@ -506,6 +728,14 @@ export const AdjustmentClient = () => {
                               onMobileControlsClose={() =>
                                    setIsMobileControlsOpen(false)
                               }
+                              onColorPickerDragStart={() =>
+                                   setIsPickingColor(true)
+                              }
+                              onColorPickerDragEnd={() =>
+                                   setIsPickingColor(false)
+                              }
+                              selectedEyebrow={selectedEyebrow}
+                              onEyebrowChange={handleEyebrowChange}
                          />
                     </div>
                </div>
