@@ -1,5 +1,5 @@
-import { memo } from 'react';
 import { Palette } from 'lucide-react';
+import { memo } from 'react';
 
 const POPULAR_COLORS = {
      lips: [
@@ -41,10 +41,29 @@ interface ColorPickerProps {
           g: number;
           b: number;
      };
+     activeColor: {
+          type: 'lips' | 'blush' | null;
+          color: {
+               r: number;
+               g: number;
+               b: number;
+          } | null;
+     };
+     onColorSelect: (
+          type: 'lips' | 'blush',
+          color: { r: number; g: number; b: number }
+     ) => void;
 }
 
 export const ColorPicker = memo(
-     ({ label, type, onChange, currentColor }: ColorPickerProps) => {
+     ({
+          label,
+          type,
+          onChange,
+
+          activeColor,
+          onColorSelect,
+     }: ColorPickerProps) => {
           return (
                <div className="space-y-2">
                     <div className="flex items-center gap-2 text-gray-700">
@@ -54,26 +73,28 @@ export const ColorPicker = memo(
 
                     <div className="grid grid-cols-4 gap-2">
                          {POPULAR_COLORS[type].map((color, index) => {
-                              const isActive =
-                                   color.rgb.r === currentColor.r &&
-                                   color.rgb.g === currentColor.g &&
-                                   color.rgb.b === currentColor.b;
+                              const isColorActive =
+                                   activeColor?.type === type &&
+                                   activeColor?.color?.r === color.rgb.r &&
+                                   activeColor?.color?.g === color.rgb.g &&
+                                   activeColor?.color?.b === color.rgb.b;
 
                               return (
                                    <button
                                         key={index}
-                                        onClick={() =>
+                                        onClick={() => {
+                                             onColorSelect(type, color.rgb);
                                              onChange(
                                                   color.rgb.r,
                                                   color.rgb.g,
                                                   color.rgb.b
-                                             )
-                                        }
+                                             );
+                                        }}
                                         className="group relative"
                                    >
                                         <div
                                              className={`h-12 w-full rounded-lg border-2 transition-all hover:scale-105 hover:shadow-md ${
-                                                  isActive
+                                                  isColorActive
                                                        ? 'border-pink-500 ring-2 ring-pink-500/20'
                                                        : 'border-white shadow-sm'
                                              }`}
@@ -83,7 +104,7 @@ export const ColorPicker = memo(
                                         />
                                         <div
                                              className={`mt-1 text-center text-xs ${
-                                                  isActive
+                                                  isColorActive
                                                        ? 'text-pink-500'
                                                        : 'text-gray-600'
                                              }`}

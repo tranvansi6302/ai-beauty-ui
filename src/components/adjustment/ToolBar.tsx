@@ -1,12 +1,11 @@
 'use client';
 import {
+     Download,
+     Hand,
+     RotateCcw,
      SquareSplitHorizontal,
      ZoomIn,
      ZoomOut,
-     Hand,
-     RotateCcw,
-     Download,
-     Settings2,
 } from 'lucide-react';
 
 interface ToolBarProps {
@@ -30,7 +29,6 @@ export const ToolBar = ({
      onGrabToggle,
      onReset,
      onDownload,
-     onMobileControlsToggle,
 }: ToolBarProps) => {
      const tools = [
           {

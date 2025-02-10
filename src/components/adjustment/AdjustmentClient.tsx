@@ -44,13 +44,13 @@ export const AdjustmentClient = () => {
      const [controls, setControls] = useState<ControlsType>({
           // Các giá trị mặc định cho chân mày
           definition: 'SHARPEN',
-          resize_horizontal: 120,
-          resize_vertical: 200,
-          resize_position_up: -100,
+          resize_horizontal: 50,
+          resize_vertical: 90,
+          resize_position_up: -40,
           resize_position_left: -35,
-          resize_position_right: -60,
-          rotate_left: 10,
-          rotate_right: -10,
+          resize_position_right: -35,
+          rotate_left: 0,
+          rotate_right: 0,
           resize_scale_left: 1.0,
           resize_scale_right: 1.0,
 
@@ -93,6 +93,19 @@ export const AdjustmentClient = () => {
      const [tempControls, setTempControls] = useState<ControlsType | null>(
           null
      );
+
+     // Thêm state để theo dõi màu đang được chọn
+     const [activeColor, setActiveColor] = useState<{
+          type: 'lips' | 'blush' | null;
+          color: {
+               r: number;
+               g: number;
+               b: number;
+          } | null;
+     }>({
+          type: null,
+          color: null,
+     });
 
      const callAdjustmentAPI = useCallback(
           debounce(async (data: AdjustmentData) => {
@@ -210,13 +223,13 @@ export const AdjustmentClient = () => {
                resize_scale_right: 1.0,
                anchor: 'center',
                definition: 'SHARPEN',
-               resize_horizontal: 120,
-               resize_vertical: 200,
-               resize_position_up: -100,
+               resize_horizontal: 50,
+               resize_vertical: 90,
+               resize_position_up: -40,
                resize_position_left: -35,
-               resize_position_right: -60,
-               rotate_left: 10,
-               rotate_right: -10,
+               resize_position_right: -35,
+               rotate_left: 0,
+               rotate_right: 0,
           };
 
           callAdjustmentAPI(initialData);
@@ -300,13 +313,13 @@ export const AdjustmentClient = () => {
      const handleReset = useCallback(() => {
           setControls({
                definition: 'SHARPEN',
-               resize_horizontal: 120,
-               resize_vertical: 200,
-               resize_position_up: -100,
+               resize_horizontal: 50,
+               resize_vertical: 90,
+               resize_position_up: -40,
                resize_position_left: -35,
                resize_position_right: -60,
-               rotate_left: 10,
-               rotate_right: -10,
+               rotate_left: 0,
+               rotate_right: 0,
                resize_scale_left: 1.0,
                resize_scale_right: 1.0,
                color_skin: 0.75,
@@ -396,10 +409,12 @@ export const AdjustmentClient = () => {
           }
 
           // Nếu không phải đang kéo, gọi API bình thường
-          handleAdjustment({
-               ...getAdjustmentData(),
-               [name]: value,
-          });
+          handleAdjustment(
+               getAdjustmentData({
+                    ...controls,
+                    [name]: value,
+               })
+          );
      };
 
      const onDragEnd = () => {
@@ -703,6 +718,20 @@ export const AdjustmentClient = () => {
                                         }
                                         selectedEyebrow={selectedEyebrow}
                                         onEyebrowChange={handleEyebrowChange}
+                                        activeColor={activeColor}
+                                        onColorSelect={(
+                                             type: 'lips' | 'blush',
+                                             color: {
+                                                  r: number;
+                                                  g: number;
+                                                  b: number;
+                                             }
+                                        ) =>
+                                             setActiveColor({
+                                                  type,
+                                                  color,
+                                             })
+                                        }
                                    />
                               </div>
                          </div>
@@ -761,9 +790,46 @@ export const AdjustmentClient = () => {
                               }
                               selectedEyebrow={selectedEyebrow}
                               onEyebrowChange={handleEyebrowChange}
+                              activeColor={activeColor}
+                              onColorSelect={(
+                                   type: 'lips' | 'blush',
+                                   color: { r: number; g: number; b: number }
+                              ) =>
+                                   setActiveColor({
+                                        type,
+                                        color,
+                                   })
+                              }
                          />
                     </div>
                </div>
           </div>
      );
 };
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function getAdjustmentData(_tempControls: {
+     definition: 'SHARPEN' | 'SMOOTH';
+     resize_horizontal: number;
+     resize_vertical: number;
+     resize_position_up: number;
+     resize_position_left: number;
+     resize_position_right: number;
+     rotate_left: number;
+     rotate_right: number;
+     resize_scale_left: number;
+     resize_scale_right: number;
+     color_skin: number;
+     color_lips_r: number;
+     color_lips_g: number;
+     color_lips_b: number;
+     color_blush_r: number;
+     color_blush_g: number;
+     color_blush_b: number;
+}): any {
+     throw new Error('Function not implemented.');
+}
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function handleAdjustment(arg0: any) {
+     throw new Error('Function not implemented.');
+}

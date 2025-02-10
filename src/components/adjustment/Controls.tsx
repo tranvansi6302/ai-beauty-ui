@@ -50,6 +50,18 @@ interface ControlsProps {
      onColorPickerDragEnd: () => void;
      selectedEyebrow: string;
      onEyebrowChange: (path: string) => void;
+     activeColor: {
+          type: 'lips' | 'blush' | null;
+          color: {
+               r: number;
+               g: number;
+               b: number;
+          } | null;
+     };
+     onColorSelect: (
+          type: 'lips' | 'blush',
+          color: { r: number; g: number; b: number }
+     ) => void;
 }
 
 // Thêm constant cho default values
@@ -79,6 +91,8 @@ export const Controls = ({
      onMobileControlsClose,
      selectedEyebrow,
      onEyebrowChange,
+     activeColor,
+     onColorSelect,
 }: ControlsProps) => {
      return (
           <div
@@ -222,6 +236,10 @@ export const Controls = ({
                                                             g: controls.color_lips_g,
                                                             b: controls.color_lips_b,
                                                        }}
+                                                       activeColor={activeColor}
+                                                       onColorSelect={
+                                                            onColorSelect
+                                                       }
                                                        onChange={(r, g, b) => {
                                                             onControlChange(
                                                                  'color_lips_r',
@@ -248,6 +266,10 @@ export const Controls = ({
                                                             g: controls.color_blush_g,
                                                             b: controls.color_blush_b,
                                                        }}
+                                                       activeColor={activeColor}
+                                                       onColorSelect={
+                                                            onColorSelect
+                                                       }
                                                        onChange={(r, g, b) => {
                                                             onControlChange(
                                                                  'color_blush_r',
