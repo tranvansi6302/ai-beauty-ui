@@ -11,7 +11,6 @@ const POPULAR_COLORS = {
           { name: 'Đỏ cam', rgb: { r: 255, g: 69, b: 0 } }, // #FF4500 - Đỏ cam nổi bật
           { name: 'Hồng pastel', rgb: { r: 255, g: 182, b: 193 } }, // #FFB6C1 - Hồng pastel nhẹ nhàng
           { name: 'Đỏ đất', rgb: { r: 165, g: 42, b: 42 } }, // #A52A2A - Đỏ đất trầm
-          // Thêm các màu xanh để test
           { name: 'Xanh biển', rgb: { r: 0, g: 0, b: 255 } }, // #0000FF - Xanh biển đậm
           { name: 'Xanh lá', rgb: { r: 0, g: 255, b: 0 } }, // #00FF00 - Xanh lá cây
           { name: 'Xanh ngọc', rgb: { r: 0, g: 255, b: 255 } }, // #00FFFF - Xanh ngọc sáng
@@ -26,7 +25,6 @@ const POPULAR_COLORS = {
           { name: 'Hồng đất', rgb: { r: 222, g: 165, b: 164 } }, // #DEA5A4 - Hồng đất trầm
           { name: 'Hồng nude', rgb: { r: 210, g: 180, b: 140 } }, // #D2B48C - Hồng nude tự nhiên
           { name: 'Cam san hô', rgb: { r: 255, g: 127, b: 80 } }, // #FF7F50 - Cam san hô tươi
-          // Thêm các màu xanh để test
           { name: 'Xanh mint', rgb: { r: 189, g: 252, b: 201 } }, // #BDFCC9 - Xanh bạc hà nhẹ
           { name: 'Xanh pastel', rgb: { r: 174, g: 198, b: 207 } }, // #AEC6CF - Xanh pastel
           { name: 'Xanh biển nhạt', rgb: { r: 173, g: 216, b: 230 } }, // #ADD8E6 - Xanh biển nhạt
@@ -38,10 +36,15 @@ interface ColorPickerProps {
      label: string;
      type: 'lips' | 'blush';
      onChange: (r: number, g: number, b: number) => void;
+     currentColor: {
+          r: number;
+          g: number;
+          b: number;
+     };
 }
 
 export const ColorPicker = memo(
-     ({ label, type, onChange }: ColorPickerProps) => {
+     ({ label, type, onChange, currentColor }: ColorPickerProps) => {
           return (
                <div className="space-y-2">
                     <div className="flex items-center gap-2 text-gray-700">
@@ -50,29 +53,46 @@ export const ColorPicker = memo(
                     </div>
 
                     <div className="grid grid-cols-4 gap-2">
-                         {POPULAR_COLORS[type].map((color, index) => (
-                              <button
-                                   key={index}
-                                   onClick={() =>
-                                        onChange(
-                                             color.rgb.r,
-                                             color.rgb.g,
-                                             color.rgb.b
-                                        )
-                                   }
-                                   className="group relative"
-                              >
-                                   <div
-                                        className="h-12 w-full rounded-lg border-2 border-white shadow-sm transition-all hover:scale-105 hover:shadow-md"
-                                        style={{
-                                             backgroundColor: `rgb(${color.rgb.r},${color.rgb.g},${color.rgb.b})`,
-                                        }}
-                                   />
-                                   <div className="mt-1 text-center text-xs text-gray-600">
-                                        {color.name}
-                                   </div>
-                              </button>
-                         ))}
+                         {POPULAR_COLORS[type].map((color, index) => {
+                              const isActive =
+                                   color.rgb.r === currentColor.r &&
+                                   color.rgb.g === currentColor.g &&
+                                   color.rgb.b === currentColor.b;
+
+                              return (
+                                   <button
+                                        key={index}
+                                        onClick={() =>
+                                             onChange(
+                                                  color.rgb.r,
+                                                  color.rgb.g,
+                                                  color.rgb.b
+                                             )
+                                        }
+                                        className="group relative"
+                                   >
+                                        <div
+                                             className={`h-12 w-full rounded-lg border-2 transition-all hover:scale-105 hover:shadow-md ${
+                                                  isActive
+                                                       ? 'border-pink-500 ring-2 ring-pink-500/20'
+                                                       : 'border-white shadow-sm'
+                                             }`}
+                                             style={{
+                                                  backgroundColor: `rgb(${color.rgb.r},${color.rgb.g},${color.rgb.b})`,
+                                             }}
+                                        />
+                                        <div
+                                             className={`mt-1 text-center text-xs ${
+                                                  isActive
+                                                       ? 'text-pink-500'
+                                                       : 'text-gray-600'
+                                             }`}
+                                        >
+                                             {color.name}
+                                        </div>
+                                   </button>
+                              );
+                         })}
                     </div>
                </div>
           );

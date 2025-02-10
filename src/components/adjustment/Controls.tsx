@@ -13,9 +13,9 @@ import {
      X,
 } from 'lucide-react';
 import Image from 'next/image';
-import { ColorPicker } from './ColorPicker';
 import { eyebrowData } from './data';
 import { MAKEUP_OPTIONS, SLIDER_CONFIGS } from './types';
+import { ColorPicker } from './ColorPicker';
 
 interface ControlsProps {
      showLandmarks: boolean;
@@ -79,8 +79,6 @@ export const Controls = ({
      onMobileControlsClose,
      selectedEyebrow,
      onEyebrowChange,
-     onColorPickerDragStart,
-     onColorPickerDragEnd,
 }: ControlsProps) => {
      return (
           <div
@@ -177,9 +175,21 @@ export const Controls = ({
                                                             type="range"
                                                             min={0}
                                                             max={10}
-                                                            step={0.1}
+                                                            step={0.05}
                                                             value={
                                                                  controls.color_skin
+                                                            }
+                                                            onMouseDown={
+                                                                 onDragStart
+                                                            }
+                                                            onMouseUp={
+                                                                 onDragEnd
+                                                            }
+                                                            onTouchStart={
+                                                                 onDragStart
+                                                            }
+                                                            onTouchEnd={
+                                                                 onDragEnd
                                                             }
                                                             onChange={(e) =>
                                                                  onControlChange(
@@ -191,11 +201,7 @@ export const Controls = ({
                                                                       )
                                                                  )
                                                             }
-                                                            className={`h-2 w-full cursor-pointer appearance-none rounded-lg bg-gray-200 transition-all hover:accent-pink-600 ${
-                                                                 isDragging
-                                                                      ? 'accent-pink-500 ring-2 ring-pink-500/20'
-                                                                      : 'accent-pink-500'
-                                                            }`}
+                                                            className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-gray-200 accent-pink-500 transition-all hover:accent-pink-600"
                                                        />
                                                        <div className="text-right text-xs text-gray-500">
                                                             {controls.color_skin.toFixed(
@@ -211,6 +217,11 @@ export const Controls = ({
                                                   <ColorPicker
                                                        label="Màu môi"
                                                        type="lips"
+                                                       currentColor={{
+                                                            r: controls.color_lips_r,
+                                                            g: controls.color_lips_g,
+                                                            b: controls.color_lips_b,
+                                                       }}
                                                        onChange={(r, g, b) => {
                                                             onControlChange(
                                                                  'color_lips_r',
@@ -232,6 +243,11 @@ export const Controls = ({
                                                   <ColorPicker
                                                        label="Màu má hồng"
                                                        type="blush"
+                                                       currentColor={{
+                                                            r: controls.color_blush_r,
+                                                            g: controls.color_blush_g,
+                                                            b: controls.color_blush_b,
+                                                       }}
                                                        onChange={(r, g, b) => {
                                                             onControlChange(
                                                                  'color_blush_r',

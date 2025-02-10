@@ -89,6 +89,11 @@ export const AdjustmentClient = () => {
           eyebrowData[0].path
      );
 
+     // Thêm state để lưu giá trị tạm thời khi đang kéo
+     const [tempControls, setTempControls] = useState<ControlsType | null>(
+          null
+     );
+
      const callAdjustmentAPI = useCallback(
           debounce(async (data: AdjustmentData) => {
                if (!cleanedImage) return;
@@ -103,7 +108,7 @@ export const AdjustmentClient = () => {
                try {
                     setIsLoading(true);
                     const response = await fetch(
-                         'http://localhost:5000/adjust',
+                         'https://external.365sharing.org/ai-beauty/adjust',
                          {
                               method: 'POST',
                               headers: {
@@ -374,18 +379,38 @@ export const AdjustmentClient = () => {
           );
      }, []);
 
-     const onControlChange = useCallback((name: string, value: any) => {
-          console.log('Before update:', name, value);
-          console.log('Previous controls:', controls);
-          setControls((prev) => {
-               const newControls = {
-                    ...prev,
+     const onControlChange = (name: string, value: any) => {
+          // Cập nhật UI ngay lập tức
+          setControls((prev) => ({
+               ...prev,
+               [name]: value,
+          }));
+
+          // Nếu đang kéo (isDragging = true), chỉ cập nhật UI không gọi API
+          if (isDragging) {
+               setTempControls((prev) => ({
+                    ...(prev || controls),
                     [name]: value,
-               };
-               console.log('New controls:', newControls);
-               return newControls;
+               }));
+               return;
+          }
+
+          // Nếu không phải đang kéo, gọi API bình thường
+          handleAdjustment({
+               ...getAdjustmentData(),
+               [name]: value,
           });
-     }, []);
+     };
+
+     const onDragEnd = () => {
+          setIsDragging(false);
+
+          // Khi buông chuột, nếu có giá trị tạm thời thì gọi API với giá trị đó
+          if (tempControls) {
+               handleAdjustment(getAdjustmentData(tempControls));
+               setTempControls(null);
+          }
+     };
 
      const handleResize = useCallback((newWidth: number) => {
           setLeftWidth(newWidth);
@@ -667,7 +692,7 @@ export const AdjustmentClient = () => {
                                         onMakeupToggle={onMakeupToggle}
                                         onControlChange={onControlChange}
                                         onDragStart={() => setIsDragging(true)}
-                                        onDragEnd={() => setIsDragging(false)}
+                                        onDragEnd={onDragEnd}
                                         isMobileControlsOpen={false}
                                         onMobileControlsClose={() => {}}
                                         onColorPickerDragStart={() =>
@@ -723,7 +748,7 @@ export const AdjustmentClient = () => {
                               onMakeupToggle={onMakeupToggle}
                               onControlChange={onControlChange}
                               onDragStart={() => setIsDragging(true)}
-                              onDragEnd={() => setIsDragging(false)}
+                              onDragEnd={onDragEnd}
                               isMobileControlsOpen={isMobileControlsOpen}
                               onMobileControlsClose={() =>
                                    setIsMobileControlsOpen(false)
