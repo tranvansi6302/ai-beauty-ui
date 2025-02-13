@@ -5,7 +5,8 @@ import { MakeupToggle } from '@/components/MakeupToggle';
 import { SliderControl } from '@/components/SliderControl';
 import { Switch } from '@headlessui/react';
 import {
-     Footprints,
+     BadgeMinus,
+     Eclipse,
      Map,
      Palette,
      RefreshCcw,
@@ -13,9 +14,9 @@ import {
      X,
 } from 'lucide-react';
 import Image from 'next/image';
+import { ColorPicker } from './ColorPicker';
 import { eyebrowData } from './data';
 import { MAKEUP_OPTIONS, SLIDER_CONFIGS } from './types';
-import { ColorPicker } from './ColorPicker';
 
 interface ControlsProps {
      showLandmarks: boolean;
@@ -37,6 +38,7 @@ interface ControlsProps {
           color_blush_r: number;
           color_blush_g: number;
           color_blush_b: number;
+          color_eyebrow: number;
      };
      onLandmarksChange: (value: boolean) => void;
      onEyebrowsChange: (value: boolean) => void;
@@ -62,19 +64,47 @@ interface ControlsProps {
           type: 'lips' | 'blush',
           color: { r: number; g: number; b: number }
      ) => void;
+     onReset: () => void;
 }
 
-// Thêm constant cho default values
-const DEFAULT_CONTROLS = {
-     definition: 'SHARPEN' as 'SHARPEN' | 'SMOOTH',
-     resize_horizontal: 120,
-     resize_vertical: 200,
-     resize_position_up: -100,
-     resize_position_left: -35,
-     resize_position_right: -60,
-     rotate_left: 10,
-     rotate_right: -10,
-};
+// Điều chỉnh lại constant cho các preset màu chân mày chỉ với text color
+const EYEBROW_COLORS = [
+     {
+          name: 'Xanh đậm',
+          value: -4,
+          textColor: 'text-blue-700',
+     },
+     {
+          name: 'Xanh nhạt',
+          value: -2,
+          textColor: 'text-blue-500',
+     },
+     {
+          name: 'Đen',
+          value: 0,
+          textColor: 'text-gray-900',
+     },
+     {
+          name: 'Màu hiện tại',
+          value: 1,
+          textColor: 'text-gray-600',
+     },
+     {
+          name: 'Nâu đỏ',
+          value: 2,
+          textColor: 'text-red-700',
+     },
+     {
+          name: 'Đỏ nhạt',
+          value: 3,
+          textColor: 'text-red-500',
+     },
+     {
+          name: 'Đỏ đậm',
+          value: 4,
+          textColor: 'text-red-800',
+     },
+];
 
 export const Controls = ({
      showLandmarks,
@@ -93,6 +123,7 @@ export const Controls = ({
      onEyebrowChange,
      activeColor,
      onColorSelect,
+     onReset,
 }: ControlsProps) => {
      return (
           <div
@@ -116,7 +147,7 @@ export const Controls = ({
                                    <div className="flex justify-between gap-5">
                                         <div className="flex flex-col items-start space-y-2">
                                              <div className="flex items-center gap-2 text-gray-700">
-                                                  <Footprints className="h-3.5 w-3.5" />
+                                                  <BadgeMinus className="h-3.5 w-3.5" />
                                                   <label className="text-sm font-medium">
                                                        Xóa chân mày
                                                   </label>
@@ -291,9 +322,9 @@ export const Controls = ({
                               </div>
 
                               {removeEyebrows && (
-                                   <div className="w-full rounded-lg bg-gray-50/50 p-3">
+                                   <div className="mt-2 w-full rounded-lg">
                                         <div className="mb-3 flex items-center">
-                                             <Settings className="h-3.5 w-3.5 text-gray-700" />
+                                             <Eclipse className="h-3.5 w-3.5 text-gray-700" />
                                              <span className="ml-2 text-sm font-medium text-gray-700">
                                                   Kiểu chân mày
                                              </span>
@@ -348,6 +379,41 @@ export const Controls = ({
                                                        </div>
                                                   )
                                              )}
+                                        </div>
+
+                                        <div className="mt-6 space-y-2 border-t pt-4">
+                                             <div className="flex items-center gap-2 text-gray-700">
+                                                  <Palette className="h-3.5 w-3.5" />
+                                                  <label className="text-sm font-medium">
+                                                       Màu chân mày
+                                                  </label>
+                                             </div>
+
+                                             <div className="grid grid-cols-3 gap-1.5">
+                                                  {EYEBROW_COLORS.map(
+                                                       (color) => (
+                                                            <button
+                                                                 key={
+                                                                      color.value
+                                                                 }
+                                                                 onClick={() =>
+                                                                      onControlChange(
+                                                                           'color_eyebrow',
+                                                                           color.value
+                                                                      )
+                                                                 }
+                                                                 className={`w-full whitespace-nowrap rounded-lg px-3 py-2.5 text-[13px] font-medium transition-all ${
+                                                                      controls.color_eyebrow ===
+                                                                      color.value
+                                                                           ? 'border border-pink-500 bg-pink-500 text-white'
+                                                                           : `border border-gray-200 bg-white ${color.textColor} hover:bg-gray-50`
+                                                                 }`}
+                                                            >
+                                                                 {color.name}
+                                                            </button>
+                                                       )
+                                                  )}
+                                             </div>
                                         </div>
                                    </div>
                               )}
@@ -414,18 +480,7 @@ export const Controls = ({
                                                   </p>
                                              </div>
                                              <button
-                                                  onClick={() => {
-                                                       Object.entries(
-                                                            DEFAULT_CONTROLS
-                                                       ).forEach(
-                                                            ([key, value]) => {
-                                                                 onControlChange(
-                                                                      key,
-                                                                      value
-                                                                 );
-                                                            }
-                                                       );
-                                                  }}
+                                                  onClick={onReset}
                                                   className="flex items-center gap-1.5 text-[14px] font-medium text-pink-500 transition-colors hover:text-pink-600"
                                              >
                                                   <RefreshCcw className="h-3.5 w-3.5" />

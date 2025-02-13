@@ -39,6 +39,7 @@ export const AdjustmentClient = () => {
           color_blush_r: number;
           color_blush_g: number;
           color_blush_b: number;
+          color_eyebrow: number;
      };
 
      const [controls, setControls] = useState<ControlsType>({
@@ -62,6 +63,7 @@ export const AdjustmentClient = () => {
           color_blush_r: 174,
           color_blush_g: 86,
           color_blush_b: 84,
+          color_eyebrow: 1,
      });
 
      const [removeEyebrows, setRemoveEyebrows] = useState(true);
@@ -164,6 +166,7 @@ export const AdjustmentClient = () => {
                                         controls.color_blush_g,
                                         controls.color_blush_b,
                                    ],
+                                   color_eyebrow: controls.color_eyebrow,
                               }),
                               signal: controller.signal,
                          }
@@ -329,6 +332,7 @@ export const AdjustmentClient = () => {
                color_blush_r: 174,
                color_blush_g: 86,
                color_blush_b: 84,
+               color_eyebrow: 1,
           });
      }, []);
 
@@ -701,6 +705,8 @@ export const AdjustmentClient = () => {
                                              color_blush_b:
                                                   controls.color_blush_b,
                                              color_skin: controls.color_skin,
+                                             color_eyebrow:
+                                                  controls.color_eyebrow,
                                         }}
                                         onLandmarksChange={setShowLandmarks}
                                         onEyebrowsChange={setRemoveEyebrows}
@@ -719,6 +725,7 @@ export const AdjustmentClient = () => {
                                         selectedEyebrow={selectedEyebrow}
                                         onEyebrowChange={handleEyebrowChange}
                                         activeColor={activeColor}
+                                        onReset={handleReset}
                                         onColorSelect={(
                                              type: 'lips' | 'blush',
                                              color: {
@@ -751,6 +758,7 @@ export const AdjustmentClient = () => {
                               showLandmarks={showLandmarks}
                               removeEyebrows={removeEyebrows}
                               selectedMakeup={selectedMakeup}
+                              onReset={handleReset}
                               controls={{
                                    definition: controls.definition,
                                    resize_horizontal:
@@ -771,6 +779,7 @@ export const AdjustmentClient = () => {
                                    color_blush_g: controls.color_blush_g,
                                    color_blush_b: controls.color_blush_b,
                                    color_skin: controls.color_skin,
+                                   color_eyebrow: controls.color_eyebrow,
                               }}
                               onLandmarksChange={setShowLandmarks}
                               onEyebrowsChange={setRemoveEyebrows}
@@ -825,6 +834,7 @@ function getAdjustmentData(_tempControls: {
      color_blush_r: number;
      color_blush_g: number;
      color_blush_b: number;
+     color_eyebrow: number;
 }): any {
      throw new Error('Function not implemented.');
 }
