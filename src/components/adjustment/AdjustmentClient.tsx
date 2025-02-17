@@ -2,10 +2,11 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 'use client';
 import { debounce } from 'lodash';
-import { ArrowLeft, Settings2 } from 'lucide-react';
+import { ArrowLeft, Camera, Upload } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { CameraCapture } from '../workplace/CameraCapture';
+import { ImageUpload } from '../workplace/ImageUpload';
 import { eyebrow_left_path_1 } from './base64_eyebrow_left_1';
 import { Controls } from './Controls';
 import { eyebrowData } from './data';
@@ -15,55 +16,51 @@ import { ToolBar } from './ToolBar';
 import { AdjustmentData, MAKEUP_MAP } from './types';
 
 export const AdjustmentClient = () => {
-     const router = useRouter();
+
      const [image, setImage] = useState<string | null>(null);
      const [cleanedImage, setCleanedImage] = useState<string>('');
      const [selectedMakeup, setSelectedMakeup] = useState<string[]>([]);
 
      // Định nghĩa controls state với kiểu dữ liệu đầy đủ
      type ControlsType = {
-          definition: 'SHARPEN' | 'SMOOTH';
-          resize_horizontal: number;
-          resize_vertical: number;
-          resize_position_up: number;
-          resize_position_left: number;
-          resize_position_right: number;
-          rotate_left: number;
-          rotate_right: number;
-          resize_scale_left: number;
-          resize_scale_right: number;
-          color_skin: number;
-          color_lips_r: number;
-          color_lips_g: number;
-          color_lips_b: number;
-          color_blush_r: number;
-          color_blush_g: number;
-          color_blush_b: number;
-          color_eyebrow: number;
+          definition: 'SHARPEN' | 'SMOOTH'; // Định nghĩa chỉnh sửa
+          color_skin: number; // Màu sắc da
+
+          color_eyebrow: number; // Màu sắc chân mày
+          eyebrow_left_width_scale: number; // Tỷ lệ rộng chân mày trái
+          eyebrow_right_width_scale: number; // Tỷ lệ rộng chân mày phải
+          eyebrow_left_height_scale: number; // Tỷ lệ cao chân mày trái
+          eyebrow_right_height_scale: number; // Tỷ lệ cao chân mày phải
+          eyebrow_left_horizontal_offset: number; // Độ lệch ngang chân mày trái
+          eyebrow_right_horizontal_offset: number; // Độ lệch ngang chân mày phải
+          eyebrow_left_vertical_offset: number; // Độ lệch dọc chân mày trái
+          eyebrow_right_vertical_offset: number; // Độ lệch dọc chân mày phải
+          eyebrow_left_rotation_angle: number; // Góc quay chân mày trái
+          eyebrow_right_rotation_angle: number; // Góc quay chân mày phải
+          [key: string]: number | string; // Dễ dàng mở rộng cho các tham số khác
      };
+
 
      const [controls, setControls] = useState<ControlsType>({
           // Các giá trị mặc định cho chân mày
           definition: 'SHARPEN',
-          resize_horizontal: 50,
-          resize_vertical: 90,
-          resize_position_up: -40,
-          resize_position_left: -35,
-          resize_position_right: -35,
-          rotate_left: 0,
-          rotate_right: 0,
-          resize_scale_left: 1.0,
-          resize_scale_right: 1.0,
+
 
           // Các giá trị mặc định cho trang điểm
           color_skin: 0.75,
-          color_lips_r: 174,
-          color_lips_g: 86,
-          color_lips_b: 84,
-          color_blush_r: 174,
-          color_blush_g: 86,
-          color_blush_b: 84,
-          color_eyebrow: 1,
+          color_eyebrow: 0,
+
+          // Các giá trị mặc định cho điều chỉnh chi tiết chân mày
+          eyebrow_left_width_scale: 1.0,
+          eyebrow_right_width_scale: 1.0,
+          eyebrow_left_height_scale: 1.0,
+          eyebrow_right_height_scale: 1.0,
+          eyebrow_left_horizontal_offset: 0,
+          eyebrow_right_horizontal_offset: 0,
+          eyebrow_left_vertical_offset: 0,
+          eyebrow_right_vertical_offset: 0,
+          eyebrow_left_rotation_angle: 8,
+          eyebrow_right_rotation_angle: -8,
      });
 
      const [removeEyebrows, setRemoveEyebrows] = useState(true);
@@ -82,10 +79,10 @@ export const AdjustmentClient = () => {
      const [comparePosition, setComparePosition] = useState(50);
      const [leftWidth, setLeftWidth] = useState(50);
      const imageRef = useRef<HTMLDivElement>(null);
-     const [imageHeight, setImageHeight] = useState<number>(0);
+
 
      const previousRequest = useRef<AbortController | null>(null);
-     const [isPickingColor, setIsPickingColor] = useState(false);
+     const [isPickingColor] = useState(false);
 
      const [selectedEyebrow, setSelectedEyebrow] = useState(
           eyebrowData[0].path
@@ -108,6 +105,13 @@ export const AdjustmentClient = () => {
           type: null,
           color: null,
      });
+
+     // Thêm states mới
+     const [activeTab, setActiveTab] = useState<'upload' | 'capture' | 'gallery'>('upload');
+     const [error, setError] = useState<string | null>(null);
+
+     // Thêm ref cho Controls container
+     const controlsRef = useRef<HTMLDivElement>(null);
 
      const callAdjustmentAPI = useCallback(
           debounce(async (data: AdjustmentData) => {
@@ -132,53 +136,29 @@ export const AdjustmentClient = () => {
                               body: JSON.stringify({
                                    input_image: cleanedImage,
                                    eyebrow_left_path: data.eyebrow_left_path,
-                                   output_image_path:
-                                        'data/output_images/portrait_new_eyebrows',
+                                   output_image_path: 'data/output_images/portrait_new_eyebrows',
                                    apply_makeup: data.apply_makeup,
                                    features: data.features,
                                    show_landmarks: data.show_landmarks,
                                    remove_eyebrows: data.remove_eyebrows,
                                    anchor: 'center',
                                    definition: data.definition,
-                                   resize_horizontal: data.resize_horizontal,
-                                   resize_vertical: data.resize_vertical,
-                                   resize_position_up: data.resize_position_up,
-                                   resize_position_left:
-                                        data.resize_position_left,
-                                   resize_position_right:
-                                        data.resize_position_right,
-                                   rotate_left: data.rotate_left,
-                                   rotate_right: data.rotate_right,
-                                   resize_scale_left:
-                                        controls.resize_scale_left,
-                                   resize_scale_right:
-                                        controls.resize_scale_right,
                                    color_skin: controls.color_skin,
-                                   color_lips: [
-                                        controls.color_lips_r,
-                                        controls.color_lips_g,
-                                        controls.color_lips_b,
-                                   ],
-                                   color_blush: [
-                                        controls.color_blush_r,
-                                        controls.color_blush_g,
-                                        controls.color_blush_b,
-                                   ],
                                    color_eyebrow: controls.color_eyebrow,
                                    adjust_params: {
                                         left: {
-                                             width_scale: 1,
-                                             height_scale: 1,
-                                             horizontal_offset: 0,
-                                             vertical_offset: 0,
-                                             rotation_angle: 8,
+                                             width_scale: Number(controls.eyebrow_left_width_scale) || 1.0,
+                                             height_scale: Number(controls.eyebrow_left_height_scale) || 1.0,
+                                             horizontal_offset: Number(controls.eyebrow_left_horizontal_offset) || 0,
+                                             vertical_offset: Number(controls.eyebrow_left_vertical_offset) || 0,
+                                             rotation_angle: Number(controls.eyebrow_left_rotation_angle) || 8
                                         },
                                         right: {
-                                             width_scale: 1,
-                                             height_scale: 1,
-                                             horizontal_offset: 0,
-                                             vertical_offset: 0,
-                                             rotation_angle: -8,
+                                             width_scale: Number(controls.eyebrow_right_width_scale) || 1.0,
+                                             height_scale: Number(controls.eyebrow_right_height_scale) || 1.0,
+                                             horizontal_offset: Number(controls.eyebrow_right_horizontal_offset) || 0,
+                                             vertical_offset: Number(controls.eyebrow_right_vertical_offset) || 0,
+                                             rotation_angle: Number(controls.eyebrow_right_rotation_angle) || -8
                                         }
                                    }
                               }),
@@ -192,9 +172,7 @@ export const AdjustmentClient = () => {
 
                     const result = await response.json();
                     if (result.output_image_path) {
-                         setOutputImage(
-                              `data:image/jpeg;base64,${result.output_image_path}`
-                         );
+                         setOutputImage(`data:image/jpeg;base64,${result.output_image_path}`);
                     }
                } catch (error: unknown) {
                     if (error instanceof Error && error.name !== 'AbortError') {
@@ -210,17 +188,9 @@ export const AdjustmentClient = () => {
      );
 
      useEffect(() => {
-          const initialImage = localStorage.getItem('selectedImage');
-          if (!initialImage) {
-               router.push('/workplace');
-               return;
-          }
+          if (!image) return;
 
-          setImage(initialImage);
-          const cleaned = initialImage.replace(
-               /^data:image\/[a-z]+;base64,/,
-               ''
-          );
+          const cleaned = image.replace(/^data:image\/[a-z]+;base64,/, '');
           setCleanedImage(cleaned);
 
           const initialData: AdjustmentData = {
@@ -228,27 +198,31 @@ export const AdjustmentClient = () => {
                output_image_path: 'data/output_images/portrait_new_eyebrows',
                features: [], // Mảng rỗng vì chưa chọn trang điểm nào
                show_landmarks: false,
-               color_lips: [174, 86, 84], // Giá trị mặc định cho màu môi
-               color_skin: 0.75, // Giá trị mặc định cho màu da
-               color_blush: [174, 86, 84], // Giá trị mặc định cho má hồng
+               color_skin: 0.75,
                eyebrow_left_path: eyebrow_left_path_1,
                remove_eyebrows: false,
                apply_makeup: false,
-               resize_scale_left: 1.0,
-               resize_scale_right: 1.0,
-               anchor: 'center',
                definition: 'SHARPEN',
-               resize_horizontal: 50,
-               resize_vertical: 90,
-               resize_position_up: -40,
-               resize_position_left: -35,
-               resize_position_right: -35,
-               rotate_left: 0,
-               rotate_right: 0,
+               adjust_params: {
+                    left: {
+                         width_scale: 1.0,
+                         height_scale: 1.0,
+                         horizontal_offset: 0,
+                         vertical_offset: 0,
+                         rotation_angle: 8,
+                    },
+                    right: {
+                         width_scale: 1.0,
+                         height_scale: 1.0,
+                         horizontal_offset: 0,
+                         vertical_offset: 0,
+                         rotation_angle: -8,
+                    },
+               },
           };
 
           callAdjustmentAPI(initialData);
-     }, [router, showLandmarks, removeEyebrows, callAdjustmentAPI]);
+     }, [callAdjustmentAPI]);
 
      useEffect(() => {
           if (!isDragging && !isPickingColor && cleanedImage) {
@@ -266,28 +240,15 @@ export const AdjustmentClient = () => {
                     features: features,
                     show_landmarks: showLandmarks,
                     remove_eyebrows: removeEyebrows,
-                    anchor: 'center',
+
                     definition: controls.definition || 'SHARPEN',
-                    resize_horizontal: controls.resize_horizontal || 0,
-                    resize_vertical: controls.resize_vertical || 0,
-                    resize_position_up: controls.resize_position_up || 0,
-                    resize_position_left: controls.resize_position_left || 0,
-                    resize_position_right: controls.resize_position_right || 0,
-                    rotate_left: controls.rotate_left || 0,
-                    rotate_right: controls.rotate_right || 0,
-                    resize_scale_left: controls.resize_scale_left || 1.0,
-                    resize_scale_right: controls.resize_scale_right || 1.0,
+
+
+
+
+
                     color_skin: controls.color_skin || 0.75,
-                    color_lips: [
-                         controls.color_lips_r || 174,
-                         controls.color_lips_g || 86,
-                         controls.color_lips_b || 84,
-                    ],
-                    color_blush: [
-                         controls.color_blush_r || 174,
-                         controls.color_blush_g || 86,
-                         controls.color_blush_b || 84,
-                    ],
+
                };
 
                callAdjustmentAPI(adjustmentData);
@@ -307,6 +268,7 @@ export const AdjustmentClient = () => {
           cleanedImage,
           callAdjustmentAPI,
           selectedEyebrow,
+
      ]);
 
      const handleZoomIn = useCallback(() => {
@@ -323,6 +285,8 @@ export const AdjustmentClient = () => {
           });
      }, []);
 
+
+
      const handleReset = useCallback(() => {
           setControls({
                definition: 'SHARPEN',
@@ -330,19 +294,26 @@ export const AdjustmentClient = () => {
                resize_vertical: 90,
                resize_position_up: -40,
                resize_position_left: -35,
-               resize_position_right: -60,
-               rotate_left: 0,
-               rotate_right: 0,
+               resize_position_right: -35,
+               rotate_left: 10,
+               rotate_right: -10,
                resize_scale_left: 1.0,
                resize_scale_right: 1.0,
                color_skin: 0.75,
-               color_lips_r: 174,
-               color_lips_g: 86,
-               color_lips_b: 84,
-               color_blush_r: 174,
-               color_blush_g: 86,
-               color_blush_b: 84,
-               color_eyebrow: 1,
+               color_eyebrow: 0,
+
+               eyebrow_left_width_scale: 1.0,
+               eyebrow_left_height_scale: 1.0,
+               eyebrow_left_horizontal_offset: 0,
+               eyebrow_left_vertical_offset: 0,
+               eyebrow_left_rotation_angle: 8,
+
+
+               eyebrow_right_width_scale: 1.0,
+               eyebrow_right_height_scale: 1.0,
+               eyebrow_right_horizontal_offset: 0,
+               eyebrow_right_vertical_offset: 0,
+               eyebrow_right_rotation_angle: -8,
           });
      }, []);
 
@@ -441,8 +412,19 @@ export const AdjustmentClient = () => {
           }
      };
 
-     const handleResize = useCallback((newWidth: number) => {
-          setLeftWidth(newWidth);
+     const handleResize = useCallback((newLeftWidth: number) => {
+          setLeftWidth(newLeftWidth);
+
+          // Cập nhật height của Controls container
+          if (imageRef.current && controlsRef.current) {
+               const imageContainer = imageRef.current.querySelector('.relative.aspect-square.w-full');
+               if (imageContainer) {
+                    const imageHeight = imageContainer.getBoundingClientRect().height;
+                    const paddingTop = 16; // p-4 = 16px
+                    const totalHeight = imageHeight + paddingTop * 2;
+                    controlsRef.current.style.height = `${totalHeight}px`;
+               }
+          }
      }, []);
 
      const handleEyebrowChange = useCallback(
@@ -464,30 +446,30 @@ export const AdjustmentClient = () => {
                          ),
                          show_landmarks: showLandmarks,
                          remove_eyebrows: removeEyebrows,
-                         anchor: 'center',
+
                          definition: controls.definition || 'SHARPEN',
-                         resize_horizontal: controls.resize_horizontal || 0,
-                         resize_vertical: controls.resize_vertical || 0,
-                         resize_position_up: controls.resize_position_up || 0,
-                         resize_position_left:
-                              controls.resize_position_left || 0,
-                         resize_position_right:
-                              controls.resize_position_right || 0,
-                         rotate_left: controls.rotate_left || 0,
-                         rotate_right: controls.rotate_right || 0,
-                         resize_scale_left: controls.resize_scale_left || 1.0,
-                         resize_scale_right: controls.resize_scale_right || 1.0,
+
                          color_skin: controls.color_skin || 0.75,
-                         color_lips: [
-                              controls.color_lips_r || 174,
-                              controls.color_lips_g || 86,
-                              controls.color_lips_b || 84,
-                         ],
-                         color_blush: [
-                              controls.color_blush_r || 174,
-                              controls.color_blush_g || 86,
-                              controls.color_blush_b || 84,
-                         ],
+
+
+
+                         adjust_params: {
+                              left: {
+                                   width_scale: controls.eyebrow_left_width_scale,
+                                   height_scale: controls.eyebrow_left_height_scale,
+                                   horizontal_offset: controls.eyebrow_left_horizontal_offset,
+                                   vertical_offset: controls.eyebrow_left_vertical_offset,
+                                   rotation_angle: controls.eyebrow_left_rotation_angle,
+                              },
+                              right: {
+                                   width_scale: controls.eyebrow_right_width_scale,
+                                   height_scale: controls.eyebrow_right_height_scale,
+                                   horizontal_offset: controls.eyebrow_right_horizontal_offset,
+                                   vertical_offset: controls.eyebrow_right_vertical_offset,
+                                   rotation_angle: controls.eyebrow_right_rotation_angle,
+                              },
+                         },
+
                     };
 
                     callAdjustmentAPI(adjustmentData);
@@ -503,32 +485,35 @@ export const AdjustmentClient = () => {
           ]
      );
 
-     // Theo dõi height của image
+     // Sửa lại phần useEffect theo dõi height
      useEffect(() => {
-          const updateHeight = () => {
-               if (imageRef.current) {
-                    const newHeight = imageRef.current.offsetHeight;
-                    setImageHeight(newHeight);
+          const updateControlsHeight = () => {
+               if (imageRef.current && controlsRef.current) {
+                    // Tính toán tổng chiều cao bao gồm cả padding
+                    const imageContainer = imageRef.current.querySelector('.relative.aspect-square.w-full');
+                    if (imageContainer) {
+                         const imageHeight = imageContainer.getBoundingClientRect().height;
+                         const paddingTop = 16; // p-4 = 16px
+                         const totalHeight = imageHeight + paddingTop * 2;
+                         controlsRef.current.style.height = `${totalHeight}px`;
+                    }
                }
           };
 
-          // Thêm một chút delay để đảm bảo DOM đã được cập nhật
-          const timeoutId = setTimeout(updateHeight, 100);
+          // Cập nhật ngay lập tức
+          updateControlsHeight();
 
-          // Theo dõi sự thay đổi của resize và image
-          const observer = new ResizeObserver(updateHeight);
+          // Theo dõi resize
+          const observer = new ResizeObserver(updateControlsHeight);
           if (imageRef.current) {
                observer.observe(imageRef.current);
           }
 
-          window.addEventListener('resize', updateHeight);
-
+          // Cleanup
           return () => {
-               clearTimeout(timeoutId);
                observer.disconnect();
-               window.removeEventListener('resize', updateHeight);
           };
-     }, [image, leftWidth]); // Thêm dependencies
+     }, [leftWidth]);
 
      // if (!image) return null;
 
@@ -539,7 +524,7 @@ export const AdjustmentClient = () => {
           onZoomIn: handleZoomIn,
           onZoomOut: handleZoomOut,
           onGrabToggle: () => setIsGrabbing(!isGrabbing),
-          onReset: handleReset,
+
           onDownload: handleDownload,
           onMobileControlsToggle: () =>
                setIsMobileControlsOpen(!isMobileControlsOpen),
@@ -562,6 +547,69 @@ export const AdjustmentClient = () => {
           isLoading,
      };
 
+     // Cập nhật hàm xử lý khi chọn ảnh
+     const handleImageSelect = (newImage: string | null) => {
+          setImage(newImage);
+          if (newImage) {
+               const cleaned = newImage.replace(/^data:image\/[a-z]+;base64,/, '');
+               setCleanedImage(cleaned);
+
+               // Gọi API ngay khi có ảnh mới
+               const initialData: AdjustmentData = {
+                    input_image: cleaned,
+                    output_image_path: 'data/output_images/portrait_new_eyebrows',
+                    features: [],
+                    show_landmarks: false,
+                    color_skin: 0.75,
+                    eyebrow_left_path: eyebrow_left_path_1,
+                    remove_eyebrows: false,
+                    apply_makeup: false,
+                    definition: 'SHARPEN',
+                    adjust_params: {
+                         left: {
+                              width_scale: 1.0,
+                              height_scale: 1.0,
+                              horizontal_offset: 0,
+                              vertical_offset: 0,
+                              rotation_angle: 8,
+                         },
+                         right: {
+                              width_scale: 1.0,
+                              height_scale: 1.0,
+                              horizontal_offset: 0,
+                              vertical_offset: 0,
+                              rotation_angle: -8,
+                         },
+                    },
+               };
+               callAdjustmentAPI(initialData);
+          }
+     };
+
+     // Thêm 2 hàm reset mới
+     const handleResetLeftEyebrow = () => {
+          setControls(prev => ({
+               ...prev,
+               eyebrow_left_width_scale: 1.0,
+               eyebrow_left_height_scale: 1.0,
+               eyebrow_left_horizontal_offset: 0,
+               eyebrow_left_vertical_offset: 0,
+               eyebrow_left_rotation_angle: 8,
+          }));
+     };
+
+
+     const handleResetRightEyebrow = () => {
+          setControls(prev => ({
+               ...prev,
+               eyebrow_right_width_scale: 1.0,
+               eyebrow_right_height_scale: 1.0,
+               eyebrow_right_horizontal_offset: 0,
+               eyebrow_right_vertical_offset: 0,
+               eyebrow_right_rotation_angle: -8,
+          }));
+     };
+
      return (
           <div className="mx-auto max-w-[1400px] px-4 md:px-0">
                <div className="mb-6 mt-4 flex items-center px-4 text-[14px] lg:mt-0 lg:px-0">
@@ -573,277 +621,234 @@ export const AdjustmentClient = () => {
                          Quay về trang chủ
                     </Link>
                </div>
-               {/* Mobile Layout */}
-               <div className="md:hidden">
-                    <div className="fixed inset-x-0 top-0">
-                         <div className="flex items-start">
-                              {/* Toolbar bên trái */}
-                              <div className="fixed left-4 top-4 z-50">
-                                   <div className="opacity-60 transition-opacity hover:opacity-100">
-                                        <ToolBar {...toolbarProps} />
-                                   </div>
+
+               {/* Main Layout */}
+               <div id="adjustment-container" className="flex flex-row items-stretch">
+                    {/* Left Side - Image Area - Thêm scroll cho toàn bộ phần bên trái */}
+                    <div
+                         style={{ width: `${leftWidth}%` }}
+                         className="w-full transition-all duration-300 ease-in-out"
+                    >
+                         <div className="flex items-start gap-4 p-4 md:p-0">
+                              <div className="flex-shrink-0"> {/* Bỏ sticky vì không còn scroll */}
+                                   <ToolBar {...toolbarProps} />
+                                   {/* Nút upload ảnh mới */}
+                                   <button
+                                        onClick={() => {
+                                             setImage(null);
+                                             setOutputImage(null);
+                                             setActiveTab('upload');
+                                        }}
+                                        className="mt-2 flex h-10 w-10 items-center justify-center rounded-full bg-black/20 backdrop-blur-sm hover:bg-black/30 transition-colors"
+                                        title="Upload ảnh mới"
+                                   >
+                                        <Upload className="h-5 w-5 text-white" />
+                                   </button>
                               </div>
 
-                              {/* Icon cài đặt bên phải */}
-                              <div className="fixed right-4 top-4 z-50">
-                                   <div className="opacity-60 transition-opacity hover:opacity-100">
-                                        <button
-                                             onClick={() =>
-                                                  setIsMobileControlsOpen(
-                                                       !isMobileControlsOpen
-                                                  )
-                                             }
-                                             className="flex h-10 w-10 items-center justify-center rounded-full bg-black/20 backdrop-blur-sm"
-                                        >
-                                             <Settings2 className="h-5 w-5 text-white" />
-                                        </button>
-                                   </div>
-                              </div>
+                              <div className="w-full" ref={imageRef}>
+                                   {!image ? (
+                                        <div className="border rounded-2xl overflow-hidden">
+                                             {/* Upload/Camera Tabs */}
+                                             <div className="border-b p-4">
+                                                  <div className="flex gap-4">
+                                                       <button
+                                                            onClick={() => setActiveTab('upload')}
+                                                            className={`pb-2 flex items-center gap-2 ${activeTab === 'upload'
+                                                                 ? 'border-b-2 border-pink-500 text-pink-500'
+                                                                 : 'text-gray-500'
+                                                                 }`}
+                                                       >
+                                                            <Upload className="w-4 h-4" />
+                                                            <span>Upload Ảnh</span>
+                                                       </button>
+                                                       <button
+                                                            onClick={() => setActiveTab('capture')}
+                                                            className={`pb-2 flex items-center gap-2 ${activeTab === 'capture'
+                                                                 ? 'border-b-2 border-pink-500 text-pink-500'
+                                                                 : 'text-gray-500'
+                                                                 }`}
+                                                       >
+                                                            <Camera className="w-4 h-4" />
+                                                            <span>Chụp Ảnh</span>
+                                                       </button>
+                                                  </div>
+                                             </div>
 
-                              {/* Full width image container */}
-                              <div className="h-screen w-screen">
-                                   {image ? (
-                                        <div className="relative h-full w-full">
-                                             <ImageComparison
-                                                  {...imageComparisonProps}
-                                             />
+                                             {/* Upload/Camera Area */}
+                                             <div className="flex flex-col">
+                                                  <div className="flex-1">
+                                                       {activeTab === 'upload' ? (
+                                                            <div className="relative w-full h-[500px]">
+                                                                 <ImageUpload
+                                                                      selectedImage={image}
+                                                                      currentStep={1}
+                                                                      onImageSelect={handleImageSelect}
+                                                                      onNextStep={() => { }}
+                                                                      setCurrentStep={() => { }}
+                                                                      setError={setError}
+                                                                 />
+                                                            </div>
+                                                       ) : (
+                                                            <div className="relative w-full h-[500px]">
+                                                                 <CameraCapture
+                                                                      selectedImage={image}
+                                                                      currentStep={1}
+                                                                      onImageSelect={handleImageSelect}
+                                                                      onNextStep={() => { }}
+                                                                      setCurrentStep={() => { }}
+                                                                      setError={setError}
+                                                                 />
+                                                                 {/* Nút lật camera */}
+                                                                 <button
+                                                                      onClick={() => {
+                                                                           // Lật camera bằng cách thay đổi facingMode
+                                                                           const videoTrack = document.querySelector('video')?.srcObject as MediaStream;
+                                                                           if (videoTrack) {
+                                                                                videoTrack.getTracks().forEach(track => track.stop());
+                                                                                // Restart camera với facingMode ngược lại
+                                                                                navigator.mediaDevices.getUserMedia({
+                                                                                     video: {
+                                                                                          facingMode: videoTrack.getVideoTracks()[0].getSettings().facingMode === 'user'
+                                                                                               ? 'environment'
+                                                                                               : 'user'
+                                                                                     }
+                                                                                }
+                                                                                ).then(stream => {
+                                                                                     const video = document.querySelector('video');
+                                                                                     if (video) {
+                                                                                          video.srcObject = stream;
+                                                                                          video.play();
+                                                                                     }
+                                                                                });
+                                                                           }
+                                                                      }}
+                                                                      className="absolute bottom-4 right-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-black/20 backdrop-blur-sm hover:bg-black/30 transition-colors"
+                                                                 >
+                                                                      <Camera className="h-5 w-5 text-white" />
+                                                                 </button>
+                                                            </div>
+                                                       )}
+                                                  </div>
+                                             </div>
                                         </div>
                                    ) : (
-                                        <div className="relative h-full w-full bg-gray-300">
-                                             <svg
-                                                  className="h-10 w-10 text-gray-200 dark:text-gray-600"
-                                                  aria-hidden="true"
-                                                  xmlns="http://www.w3.org/2000/svg"
-                                                  fill="currentColor"
-                                                  viewBox="0 0 20 18"
-                                             >
-                                                  <path d="M18 0H2a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2Zm-5.5 4a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Zm4.376 10.481A1 1 0 0 1 16 15H4a1 1 0 0 1-.895-1.447l3.5-7A1 1 0 0 1 7.468 6a.965.965 0 0 1 .9.5l2.775 4.757 1.546-1.887a1 1 0 0 1 1.618.1l2.541 4a1 1 0 0 1 .028 1.011Z" />
-                                             </svg>
+                                        <div className="relative w-full overflow-hidden rounded-2xl">
+                                             <div className="relative aspect-square w-full">
+                                                  <ImageComparison {...imageComparisonProps} />
+                                             </div>
                                         </div>
                                    )}
                               </div>
                          </div>
                     </div>
-               </div>
 
-               {/* Desktop Layout - giữ nguyên như cũ */}
-               <div className="hidden md:block">
+                    {/* Resizer */}
+                    <div className="hidden md:block">
+                         <Resizer onResize={handleResize} />
+                    </div>
+
+                    {/* Right Side - Controls */}
                     <div
-                         id="adjustment-container"
-                         className="flex flex-row items-stretch"
+                         style={{ width: `${100 - leftWidth}%` }}
+                         className="hidden w-full transition-all duration-300 ease-in-out md:block"
                     >
                          <div
-                              style={{ width: `${leftWidth}%` }}
-                              className="w-full transition-all duration-300 ease-in-out"
+                              ref={controlsRef}
+                              className="overflow-y-auto scrollbar-hide"
+                              style={{
+                                   height: imageRef.current ? `${imageRef.current.offsetHeight}px` : 'auto',
+                                   maxHeight: imageRef.current ? `${imageRef.current.offsetHeight}px` : 'auto'
+                              }}
                          >
-                              <div className="flex items-start gap-4">
-                                   <div className="flex-shrink-0">
-                                        <ToolBar {...toolbarProps} />
+                              {!image ? (
+                                   // Hiển thị yêu cầu ảnh khi đang ở chế độ upload/camera
+                                   <div className="p-4 rounded-2xl">
+                                        <h3 className="text-sm font-medium text-gray-900 mb-3">Yêu cầu về ảnh:</h3>
+                                        <ul className="space-y-2 text-sm text-gray-600">
+                                             <li className="flex items-start gap-2">
+                                                  <div className="w-1 h-1 rounded-full bg-pink-500 mt-2"></div>
+                                                  <span>Kéo thả ảnh vào đây hoặc click để chọn file</span>
+                                             </li>
+                                             <li className="flex items-start gap-2">
+                                                  <div className="w-1 h-1 rounded-full bg-pink-500 mt-2"></div>
+                                                  <span>Ảnh chụp thẳng khuôn mặt, không nghiêng hoặc quay đi</span>
+                                             </li>
+                                             <li className="flex items-start gap-2">
+                                                  <div className="w-1 h-1 rounded-full bg-pink-500 mt-2"></div>
+                                                  <span>Chụp trong điều kiện ánh sáng tốt, không bị ngược sáng</span>
+                                             </li>
+                                             <li className="flex items-start gap-2">
+                                                  <div className="w-1 h-1 rounded-full bg-pink-500 mt-2"></div>
+                                                  <span>Không đeo kính, khẩu trang hoặc phụ kiện che mặt</span>
+                                             </li>
+                                             <li className="flex items-start gap-2">
+                                                  <div className="w-1 h-1 rounded-full bg-pink-500 mt-2"></div>
+                                                  <span>Khuôn mặt chiếm 70-80% khung hình</span>
+                                             </li>
+                                             <li className="flex items-start gap-2">
+                                                  <div className="w-1 h-1 rounded-full bg-pink-500 mt-2"></div>
+                                                  <span>Hỗ trợ: JPG, PNG (Max 10MB)</span>
+                                             </li>
+                                        </ul>
                                    </div>
-
-                                   <div className="w-full" ref={imageRef}>
-                                        {image ? (
-                                             <div className="relative w-full overflow-hidden rounded-2xl">
-                                                  <div className="relative aspect-square w-full">
-                                                       <ImageComparison
-                                                            {...imageComparisonProps}
-                                                       />
-                                                  </div>
-                                             </div>
-                                        ) : (
-                                             <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-gray-300">
-                                                  <svg
-                                                       className="h-10 w-10 text-gray-200 dark:text-gray-600"
-                                                       aria-hidden="true"
-                                                       xmlns="http://www.w3.org/2000/svg"
-                                                       fill="currentColor"
-                                                       viewBox="0 0 20 18"
-                                                  >
-                                                       <path d="M18 0H2a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2Zm-5.5 4a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Zm4.376 10.481A1 1 0 0 1 16 15H4a1 1 0 0 1-.895-1.447l3.5-7A1 1 0 0 1 7.468 6a.965.965 0 0 1 .9.5l2.775 4.757 1.546-1.887a1 1 0 0 1 1.618.1l2.541 4a1 1 0 0 1 .028 1.011Z" />
-                                                  </svg>
-                                             </div>
-                                        )}
-                                   </div>
-                              </div>
-                         </div>
-
-                         <div className="hidden md:block">
-                              <Resizer onResize={handleResize} />
-                         </div>
-
-                         <div
-                              style={{ width: `${100 - leftWidth}%` }}
-                              className="hidden w-full transition-all duration-300 ease-in-out md:block"
-                         >
-                              <div
-                                   className="overflow-y-auto"
-                                   style={{
-                                        maxHeight: imageHeight
-                                             ? `${imageHeight}px`
-                                             : 'auto',
-                                   }}
-                              >
+                              ) : (
+                                   // Hiển thị Controls khi đã có ảnh
                                    <Controls
                                         showLandmarks={showLandmarks}
                                         removeEyebrows={removeEyebrows}
                                         selectedMakeup={selectedMakeup}
-                                        controls={{
-                                             definition: controls.definition,
-                                             resize_horizontal:
-                                                  controls.resize_horizontal,
-                                             resize_vertical:
-                                                  controls.resize_vertical,
-                                             resize_position_up:
-                                                  controls.resize_position_up,
-                                             resize_position_left:
-                                                  controls.resize_position_left,
-                                             resize_position_right:
-                                                  controls.resize_position_right,
-                                             rotate_left: controls.rotate_left,
-                                             rotate_right:
-                                                  controls.rotate_right,
-                                             color_lips_r:
-                                                  controls.color_lips_r,
-                                             color_lips_g:
-                                                  controls.color_lips_g,
-                                             color_lips_b:
-                                                  controls.color_lips_b,
-                                             color_blush_r:
-                                                  controls.color_blush_r,
-                                             color_blush_g:
-                                                  controls.color_blush_g,
-                                             color_blush_b:
-                                                  controls.color_blush_b,
-                                             color_skin: controls.color_skin,
-                                             color_eyebrow:
-                                                  controls.color_eyebrow,
-                                        }}
+                                        controls={controls}
                                         onLandmarksChange={setShowLandmarks}
                                         onEyebrowsChange={setRemoveEyebrows}
                                         onMakeupToggle={onMakeupToggle}
                                         onControlChange={onControlChange}
                                         onDragStart={() => setIsDragging(true)}
                                         onDragEnd={onDragEnd}
-                                        isMobileControlsOpen={false}
-                                        onMobileControlsClose={() => { }}
-                                        onColorPickerDragStart={() =>
-                                             setIsPickingColor(true)
-                                        }
-                                        onColorPickerDragEnd={() =>
-                                             setIsPickingColor(false)
-                                        }
+                                        isMobileControlsOpen={isMobileControlsOpen}
+                                        onMobileControlsClose={() => setIsMobileControlsOpen(false)}
+                                        onMobileControlsOpen={() => setIsMobileControlsOpen(true)}
                                         selectedEyebrow={selectedEyebrow}
                                         onEyebrowChange={handleEyebrowChange}
-                                        activeColor={activeColor}
                                         onReset={handleReset}
-                                        onColorSelect={(
-                                             type: 'lips' | 'blush',
-                                             color: {
-                                                  r: number;
-                                                  g: number;
-                                                  b: number;
-                                             }
-                                        ) =>
-                                             setActiveColor({
-                                                  type,
-                                                  color,
-                                             })
-                                        }
+                                        activeColor={activeColor}
+                                        onColorSelect={(type, color) => setActiveColor({ type, color })}
+                                        onResetLeftEyebrow={handleResetLeftEyebrow}
+                                        onResetRightEyebrow={handleResetRightEyebrow}
                                    />
-                              </div>
+                              )}
                          </div>
                     </div>
                </div>
 
-               {/* Mobile Controls Overlay */}
-               <div className="pointer-events-none fixed inset-0 z-50 md:hidden">
-                    <div
-                         className={`pointer-events-auto absolute bottom-0 right-0 top-0 w-[95%] max-w-[500px] transform transition-transform duration-300 ease-in-out ${isMobileControlsOpen
-                              ? 'translate-x-0'
-                              : 'translate-x-full'
-                              }`}
-                    >
-                         <Controls
-                              showLandmarks={showLandmarks}
-                              removeEyebrows={removeEyebrows}
-                              selectedMakeup={selectedMakeup}
-                              onReset={handleReset}
-                              controls={{
-                                   definition: controls.definition,
-                                   resize_horizontal:
-                                        controls.resize_horizontal,
-                                   resize_vertical: controls.resize_vertical,
-                                   resize_position_up:
-                                        controls.resize_position_up,
-                                   resize_position_left:
-                                        controls.resize_position_left,
-                                   resize_position_right:
-                                        controls.resize_position_right,
-                                   rotate_left: controls.rotate_left,
-                                   rotate_right: controls.rotate_right,
-                                   color_lips_r: controls.color_lips_r,
-                                   color_lips_g: controls.color_lips_g,
-                                   color_lips_b: controls.color_lips_b,
-                                   color_blush_r: controls.color_blush_r,
-                                   color_blush_g: controls.color_blush_g,
-                                   color_blush_b: controls.color_blush_b,
-                                   color_skin: controls.color_skin,
-                                   color_eyebrow: controls.color_eyebrow,
-                              }}
-                              onLandmarksChange={setShowLandmarks}
-                              onEyebrowsChange={setRemoveEyebrows}
-                              onMakeupToggle={onMakeupToggle}
-                              onControlChange={onControlChange}
-                              onDragStart={() => setIsDragging(true)}
-                              onDragEnd={onDragEnd}
-                              isMobileControlsOpen={isMobileControlsOpen}
-                              onMobileControlsClose={() =>
-                                   setIsMobileControlsOpen(false)
-                              }
-                              onColorPickerDragStart={() =>
-                                   setIsPickingColor(true)
-                              }
-                              onColorPickerDragEnd={() =>
-                                   setIsPickingColor(false)
-                              }
-                              selectedEyebrow={selectedEyebrow}
-                              onEyebrowChange={handleEyebrowChange}
-                              activeColor={activeColor}
-                              onColorSelect={(
-                                   type: 'lips' | 'blush',
-                                   color: { r: number; g: number; b: number }
-                              ) =>
-                                   setActiveColor({
-                                        type,
-                                        color,
-                                   })
-                              }
-                         />
+               {/* Error message */}
+               {error && (
+                    <div className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">
+                         <span className="mr-2 inline-block h-1.5 w-1.5 rounded-full bg-red-500"></span>
+                         {error}
                     </div>
-               </div>
+               )}
           </div>
      );
 };
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 function getAdjustmentData(_tempControls: {
      definition: 'SHARPEN' | 'SMOOTH';
-     resize_horizontal: number;
-     resize_vertical: number;
-     resize_position_up: number;
-     resize_position_left: number;
-     resize_position_right: number;
-     rotate_left: number;
-     rotate_right: number;
-     resize_scale_left: number;
-     resize_scale_right: number;
      color_skin: number;
-     color_lips_r: number;
-     color_lips_g: number;
-     color_lips_b: number;
-     color_blush_r: number;
-     color_blush_g: number;
-     color_blush_b: number;
+
      color_eyebrow: number;
+     eyebrow_left_width_scale: number;
+     eyebrow_left_height_scale: number;
+     eyebrow_left_horizontal_offset: number;
+     eyebrow_left_vertical_offset: number;
+     eyebrow_left_rotation_angle: number;
+     eyebrow_right_width_scale: number;
+     eyebrow_right_height_scale: number;
+     eyebrow_right_horizontal_offset: number;
+     eyebrow_right_vertical_offset: number;
+     eyebrow_right_rotation_angle: number;
+
+
 }): any {
      throw new Error('Function not implemented.');
 }

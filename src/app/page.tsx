@@ -1,5 +1,5 @@
-import { WorkplaceClient } from "@/components/workplace/WorkplaceClient";
+import { AdjustmentClient } from "@/components/adjustment/AdjustmentClient";
 
 export default function Workplace() {
-  return <WorkplaceClient />;
+  return <AdjustmentClient />;
 }

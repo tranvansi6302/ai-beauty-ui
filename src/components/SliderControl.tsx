@@ -9,6 +9,7 @@ interface SliderControlProps {
      value: number;
      min: number;
      max: number;
+     step?: number;
      onChange: (value: number) => void;
      onDragStart?: () => void;
      onDragEnd?: () => void;
@@ -21,12 +22,14 @@ export const SliderControl = ({
      value,
      min,
      max,
+     step = 0.1,
      onChange,
      onDragStart,
      onDragEnd,
      description,
      className,
 }: SliderControlProps) => {
+     console.log(label, value, min, max, step, description);
      return (
           <div className={`space-y-3 ${className}`}>
                <div className="flex items-center justify-between gap-2">
@@ -101,6 +104,7 @@ export const SliderControl = ({
                               onChange={onChange}
                               min={min}
                               max={max}
+                              step={step}
                               className="scale-100"
                          />
                     </div>
@@ -110,6 +114,7 @@ export const SliderControl = ({
                          type="range"
                          min={min}
                          max={max}
+                         step={step}
                          value={value}
                          onChange={(e) => onChange(Number(e.target.value))}
                          onMouseDown={onDragStart}

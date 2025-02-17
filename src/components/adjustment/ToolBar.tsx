@@ -2,10 +2,9 @@
 import {
      Download,
      Hand,
-     RotateCcw,
      SquareSplitHorizontal,
      ZoomIn,
-     ZoomOut,
+     ZoomOut
 } from 'lucide-react';
 
 interface ToolBarProps {
@@ -15,7 +14,6 @@ interface ToolBarProps {
      onZoomIn: () => void;
      onZoomOut: () => void;
      onGrabToggle: () => void;
-     onReset: () => void;
      onDownload: () => void;
      onMobileControlsToggle: () => void;
 }
@@ -27,7 +25,7 @@ export const ToolBar = ({
      onZoomIn,
      onZoomOut,
      onGrabToggle,
-     onReset,
+
      onDownload,
 }: ToolBarProps) => {
      const tools = [
@@ -54,11 +52,6 @@ export const ToolBar = ({
                active: isGrabbing,
           },
           {
-               icon: <RotateCcw className="h-4 w-4" />,
-               tooltip: 'Đặt lại',
-               onClick: onReset,
-          },
-          {
                icon: <Download className="h-4 w-4" />,
                tooltip: 'Tải xuống',
                onClick: onDownload,
@@ -71,11 +64,10 @@ export const ToolBar = ({
                     <div key={index} className="group relative">
                          <button
                               onClick={tool.onClick}
-                              className={`flex w-full items-center justify-center rounded-lg border border-white/20 p-1.5 backdrop-blur-sm transition-all md:border-gray-200 md:p-2 ${
-                                   tool.active
-                                        ? 'bg-pink-500 text-white hover:bg-pink-600 md:bg-pink-500'
-                                        : 'bg-white/20 text-white hover:bg-white/30 md:bg-white md:text-gray-700 md:hover:bg-gray-50'
-                              }`}
+                              className={`flex w-full items-center justify-center rounded-lg border border-white/20 p-1.5 backdrop-blur-sm transition-all md:border-gray-200 md:p-2 ${tool.active
+                                   ? 'bg-pink-500 text-white hover:bg-pink-600 md:bg-pink-500'
+                                   : 'bg-white/20 text-white hover:bg-white/30 md:bg-white md:text-gray-700 md:hover:bg-gray-50'
+                                   }`}
                          >
                               {tool.icon}
                          </button>

@@ -1,7 +1,7 @@
 "use client";
-import { Camera, X, Check, Wand } from "lucide-react";
+import { Camera, X, Check, Wand, FlipHorizontal } from "lucide-react";
 import Image from "next/image";
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 
 interface CameraCaptureProps {
   selectedImage: string | null;
@@ -21,16 +21,20 @@ export const CameraCapture = ({
   setError,
 }: CameraCaptureProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [facingMode, setFacingMode] = useState<"user" | "environment">("user");
 
   const startCapture = async () => {
     try {
       const constraints = {
         video: {
-          facingMode: "user",
+          facingMode: facingMode,
           width: { ideal: 1280 },
           height: { ideal: 720 },
         },
       };
+
+      // Dừng stream hiện tại nếu có
+      stopCapture();
 
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
 
@@ -75,7 +79,7 @@ export const CameraCapture = ({
     return () => {
       stopCapture();
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
@@ -137,9 +141,19 @@ export const CameraCapture = ({
             ref={videoRef}
             autoPlay
             playsInline
-            className="w-full h-full object-cover"
+            className={`w-full h-full object-cover ${facingMode === "user" ? "scale-x-[-1]" : ""
+              }`}
           />
-          <div className="absolute bottom-6 left-0 right-0 flex justify-center">
+          <div className="absolute bottom-6 left-0 right-0 flex justify-center items-center gap-4">
+            <button
+              onClick={() => {
+                setFacingMode(facingMode === "user" ? "environment" : "user");
+                startCapture();
+              }}
+              className="w-10 h-10 bg-white/20 backdrop-blur rounded-full flex items-center justify-center hover:bg-white/30 transition-all"
+            >
+              <FlipHorizontal className="w-5 h-5 text-white" />
+            </button>
             <button
               onClick={captureImage}
               className="w-16 h-16 bg-white rounded-full flex items-center justify-center hover:bg-gray-50 transition-all"

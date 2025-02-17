@@ -74,11 +74,10 @@ export const WorkplaceClient = () => {
                                              setSelectedImage(null);
                                              setCurrentStep(1);
                                         }}
-                                        className={`relative flex items-center pb-3 ${
-                                             activeTab === 'upload'
-                                                  ? 'text-[#ff4081]'
-                                                  : 'text-gray-500 hover:text-gray-900'
-                                        }`}
+                                        className={`relative flex items-center pb-3 ${activeTab === 'upload'
+                                             ? 'text-[#ff4081]'
+                                             : 'text-gray-500 hover:text-gray-900'
+                                             }`}
                                    >
                                         <Upload className="mr-2 h-4 w-4" />
                                         <span className="text-sm font-medium">
@@ -95,11 +94,10 @@ export const WorkplaceClient = () => {
                                              setSelectedImage(null);
                                              setCurrentStep(1);
                                         }}
-                                        className={`relative flex items-center pb-3 ${
-                                             activeTab === 'capture'
-                                                  ? 'text-[#ff4081]'
-                                                  : 'text-gray-500 hover:text-gray-900'
-                                        }`}
+                                        className={`relative flex items-center pb-3 ${activeTab === 'capture'
+                                             ? 'text-[#ff4081]'
+                                             : 'text-gray-500 hover:text-gray-900'
+                                             }`}
                                    >
                                         <Camera className="mr-2 h-4 w-4" />
                                         <span className="text-sm font-medium">
