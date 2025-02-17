@@ -5,22 +5,16 @@ export type SliderConfig = {
      max: number;
      description: string;
 };
-
 export interface AdjustmentData {
-     input_image_path?: string;
+     input_image?: string;
+
+     eyebrow_left_path?: string;
+
      output_image_path?: string;
-     patch_path?: string;
+     apply_makeup: boolean;
      features: string[] | object;
      show_landmarks: boolean;
-     color_lips?: number[];
-     color_skin?: number;
-     color_blush?: number[];
-     eyebrow_left_path?: string;
-     eyebrow_right_path?: string;
      remove_eyebrows: boolean;
-     apply_makeup: boolean;
-     resize_scale_left?: number;
-     resize_scale_right?: number;
      anchor?: string;
      definition: string | number;
      resize_horizontal: number;
@@ -30,7 +24,30 @@ export interface AdjustmentData {
      resize_position_right: number;
      rotate_left: number;
      rotate_right: number;
+     resize_scale_left?: number;
+     resize_scale_right?: number;
+     color_skin?: number;
+     color_lips?: number[];
+     color_blush?: number[];
+     color_eyebrow?: number;
+     adjust_params?: {
+          left: {
+               width_scale: number;
+               height_scale: number;
+               horizontal_offset: number;
+               vertical_offset: number;
+               rotation_angle: number;
+          };
+          right: {
+               width_scale: number;
+               height_scale: number;
+               horizontal_offset: number;
+               vertical_offset: number;
+               rotation_angle: number;
+          };
+     };
 }
+
 
 export const MAKEUP_OPTIONS = ['Môi', 'Da', 'Má'];
 

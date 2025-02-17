@@ -8,11 +8,11 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { eyebrow_left_path_1 } from './base64_eyebrow_left_1';
 import { Controls } from './Controls';
+import { eyebrowData } from './data';
 import { ImageComparison } from './ImageComparison';
 import { Resizer } from './Resizer';
 import { ToolBar } from './ToolBar';
 import { AdjustmentData, MAKEUP_MAP } from './types';
-import { eyebrowData } from './data';
 
 export const AdjustmentClient = () => {
      const router = useRouter();
@@ -123,17 +123,15 @@ export const AdjustmentClient = () => {
                try {
                     setIsLoading(true);
                     const response = await fetch(
-                         'https://external.365sharing.org/ai-beauty/adjust',
+                         'https://external.365sharing.org/ai-beauty/apply-adjustments',
                          {
                               method: 'POST',
                               headers: {
                                    'Content-Type': 'application/json',
                               },
                               body: JSON.stringify({
-                                   input_image_path: cleanedImage,
-                                   patch_path: '',
+                                   input_image: cleanedImage,
                                    eyebrow_left_path: data.eyebrow_left_path,
-                                   eyebrow_right_path: data.eyebrow_right_path,
                                    output_image_path:
                                         'data/output_images/portrait_new_eyebrows',
                                    apply_makeup: data.apply_makeup,
@@ -167,6 +165,22 @@ export const AdjustmentClient = () => {
                                         controls.color_blush_b,
                                    ],
                                    color_eyebrow: controls.color_eyebrow,
+                                   adjust_params: {
+                                        left: {
+                                             width_scale: 1,
+                                             height_scale: 1,
+                                             horizontal_offset: 0,
+                                             vertical_offset: 0,
+                                             rotation_angle: 8,
+                                        },
+                                        right: {
+                                             width_scale: 1,
+                                             height_scale: 1,
+                                             horizontal_offset: 0,
+                                             vertical_offset: 0,
+                                             rotation_angle: -8,
+                                        }
+                                   }
                               }),
                               signal: controller.signal,
                          }
@@ -210,16 +224,14 @@ export const AdjustmentClient = () => {
           setCleanedImage(cleaned);
 
           const initialData: AdjustmentData = {
-               input_image_path: cleaned,
+               input_image: cleaned,
                output_image_path: 'data/output_images/portrait_new_eyebrows',
-               patch_path: '',
                features: [], // Mảng rỗng vì chưa chọn trang điểm nào
                show_landmarks: false,
                color_lips: [174, 86, 84], // Giá trị mặc định cho màu môi
                color_skin: 0.75, // Giá trị mặc định cho màu da
                color_blush: [174, 86, 84], // Giá trị mặc định cho má hồng
                eyebrow_left_path: eyebrow_left_path_1,
-               eyebrow_right_path: '',
                remove_eyebrows: false,
                apply_makeup: false,
                resize_scale_left: 1.0,
@@ -246,10 +258,8 @@ export const AdjustmentClient = () => {
                if (selectedMakeup.includes('Má')) features.push('blush');
 
                const adjustmentData: AdjustmentData = {
-                    input_image_path: cleanedImage,
-                    patch_path: '',
+                    input_image: cleanedImage,
                     eyebrow_left_path: selectedEyebrow,
-                    eyebrow_right_path: '',
                     output_image_path:
                          'data/output_images/portrait_new_eyebrows',
                     apply_makeup: selectedMakeup.length > 0,
@@ -441,10 +451,10 @@ export const AdjustmentClient = () => {
 
                if (cleanedImage) {
                     const adjustmentData: AdjustmentData = {
-                         input_image_path: cleanedImage,
-                         patch_path: '',
+                         input_image: cleanedImage,
+
                          eyebrow_left_path: path,
-                         eyebrow_right_path: '',
+
                          output_image_path:
                               'data/output_images/portrait_new_eyebrows',
                          apply_makeup: selectedMakeup.length > 0,
@@ -715,7 +725,7 @@ export const AdjustmentClient = () => {
                                         onDragStart={() => setIsDragging(true)}
                                         onDragEnd={onDragEnd}
                                         isMobileControlsOpen={false}
-                                        onMobileControlsClose={() => {}}
+                                        onMobileControlsClose={() => { }}
                                         onColorPickerDragStart={() =>
                                              setIsPickingColor(true)
                                         }
@@ -748,11 +758,10 @@ export const AdjustmentClient = () => {
                {/* Mobile Controls Overlay */}
                <div className="pointer-events-none fixed inset-0 z-50 md:hidden">
                     <div
-                         className={`pointer-events-auto absolute bottom-0 right-0 top-0 w-[95%] max-w-[500px] transform transition-transform duration-300 ease-in-out ${
-                              isMobileControlsOpen
-                                   ? 'translate-x-0'
-                                   : 'translate-x-full'
-                         }`}
+                         className={`pointer-events-auto absolute bottom-0 right-0 top-0 w-[95%] max-w-[500px] transform transition-transform duration-300 ease-in-out ${isMobileControlsOpen
+                              ? 'translate-x-0'
+                              : 'translate-x-full'
+                              }`}
                     >
                          <Controls
                               showLandmarks={showLandmarks}
