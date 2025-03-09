@@ -1,227 +1,159 @@
-# Facial Makeup and Eyebrow Replacement Project
+# Beauty AI - Ứng dụng Thay đổi Lông mày và Makeup AI
 
-Tổng hợp lại các bước
-Trang điểm khuôn mặt: landmarks.py, makeup.py, main.py
-Nhận dạng khuôn mặt: face_recognition.py
-Xóa chân mày cũ: remove_eyebrows.py
-Thay thế chân mày: main.py
-Tùy chỉnh chân mày: customize_eyebrows.py
-Thư mục utils
-image_utils.py: Chứa các hàm liên quan đến xử lý ảnh.
-face_utils.py: Chứa các hàm liên quan đến nhận dạng khuôn mặt.
-eyebrow_utils.py: Chứa các hàm liên quan đến xử lý và dán chân mày.
+## Tổng quan dự án
 
-## Project Structure
+Beauty AI là ứng dụng cho phép người dùng thử nghiệm các kiểu lông mày khác nhau và trang điểm ảo thông qua công nghệ AI nhận diện khuôn mặt. Ứng dụng cung cấp các tính năng:
 
-project/
-│
-├── app.py
-├── requirements.txt
-├── README.md
-│
-├── data/
-│ ├── input_images/
-│ ├── output_images/
-│ ├── mask_without_eyebrows.jpg
-│ ├── left_eyebrow_sample.png
-│ └── right_eyebrow_sample.png
-│
-├── src/
-│ ├── **init**.py
-│ ├── makeup.py
-│ ├── face_recognition.py
-│ ├── remove_eyebrows.py
-├── face_authentication.py
-│ ├── customize_eyebrows.py
-│ └── utils/
-│ ├── **init**.py
-│ ├── image_utils.py
-│ ├── face_utils.py
-│ └── eyebrow_utils.py
+1. Chụp ảnh selfie hoặc tải ảnh lên
+2. Phân tích hình dạng khuôn mặt
+3. Loại bỏ lông mày hiện tại
+4. Áp dụng kiểu lông mày mới với nhiều tùy chỉnh
+5. Áp dụng trang điểm (son môi, phấn má, làm mịn da)
+6. Đưa ra gợi ý phù hợp với hình dạng khuôn mặt
 
-# Flask Makeup Application
+## API Endpoints
 
-## Giới thiệu
+Backend cung cấp các API endpoints sau:
 
-Dự án này là một ứng dụng web Flask cung cấp các API endpoint để áp dụng các điều chỉnh hình ảnh khác nhau, bao gồm trang điểm, nhận diện khuôn mặt, xóa chân mày và tùy chỉnh chân mày. Nó cho phép người dùng điều chỉnh các tham số một cách linh hoạt và áp dụng các điều chỉnh này lên hình ảnh đầu vào.
-
-# Tính Năng
-
-1. Áp dụng trang điểm lên hình ảnh.
-2. Xóa chân mày khỏi hình ảnh.
-3. Tùy chỉnh chân mày với các điều chỉnh cụ thể.
-4. Nhận diện và đánh dấu các điểm đặc trưng trên khuôn mặt.
-5. Duy trì và cập nhật trạng thái của các tham số điều chỉnh.
-
-## Yêu cầu cài đặt
-
-- Python 3.9
-- Một số thư viện bổ sung có thể cài đặt qua `requirements.txt`
-  Cài đặt các thư viện cần thiết:
-  `pip install -r requirements.txt`
-
-# Sử Dụng
-
-# Khởi động server Flask:
-
-`python app.py`
-
-# API Endpoints
-
-## 1. /camera_selfie
-
-- URL: http://localhost:5000/camera_selfie
-
-- Phương thức: POST
-
-- Mô tả: Chụp ảnh selfie và phát hiện hình dạng khuôn mặt.
-
-- Đầu vào: Không có
-
-- Đầu ra:
-
-* output_camera_selfie_b64string: Chuỗi base64 của ảnh selfie.
-
-* face_shape: Hình dạng khuôn mặt được phát hiện.
-
-## 2. /adjust
-
-- URL: http://localhost:5000/adjust
-
-- Phương thức: POST
-
-- Mô tả: Điều chỉnh các tham số và áp dụng tùy chỉnh chân mày, trang điểm.
-
-- Đầu vào:
+### 1. Camera Selfie
+- **URL**: `/camera_selfie`
+- **Method**: POST/GET
+- **Mục đích**: Chụp ảnh selfie bằng camera
+- **Phản hồi**: 
+  ```json
   {
-  "input_image_path": "path/to/input/image",
-  "output_image_path": "data/output_images/portrait_new_eyebrows",
-  "patch_path": "path/to/patch",
-  "features": ["lips", "skin", "blush"],
-  "show_landmarks": false,
-  "color_lips": [174, 86, 84],
-  "color_skin": 0.75,
-  "color_blush": [174, 86, 84],
-  "eyebrow_left_path": "path/to/left/eyebrow",
-  "eyebrow_right_path": "path/to/right/eyebrow",
-  "remove_eyebrows": false,
-  "apply_makeup": false,
-  "resize_scale_left": 1.0,
-  "resize_scale_right": 1.0,
-  "anchor": "center",
-  "definition": "SHARPEN",
-  "resize_horizontal": 0,
-  "resize_vertical": 0,
-  "resize_position_up": 0,
-  "resize_position_left": 0,
-  "resize_position_right": 0,
-  "rotate_left": 0,
-  "rotate_right": 0
+    "message": "Selfie successfully",
+    "output_camera_selfie_b64string": "base64_encoded_image_data"
   }
+  ```
 
-- Đầu ra:
+### 2. Apply Adjustments
+- **URL**: `/apply-adjustments`
+- **Method**: POST
+- **Mục đích**: Process uploaded image to apply makeup and eyebrow adjustments
+- **Request Body**:
+  ```json
+  **Ví dụ**:
+  {
+    "input_image": "base64_image_data",
+    "eyebrow_left_path": "base64_eyebrow_image_data",
+    "apply_makeup": true,
+    "remove_eyebrows": true,
+    "definition": "SHARPEN",
+    "color_eyebrow": 0,
+    "show_landmarks": false,
+    "adjust_params": {
+      "left": {
+        "width_scale": 1,
+        "height_scale": 1,
+        "horizontal_offset": 0,
+        "vertical_offset": 0,
+        "rotation_angle": 0
+      },
+      "right": {
+        "width_scale": 1,
+        "height_scale": 1,
+        "horizontal_offset": 0, 
+        "vertical_offset": 0,
+        "rotation_angle": 0
+      }
+    }
+  }
+  ```
+- **Response body**:
+  ```json
+  {
+    "message": "Parameter adjusted successfully",
+    "input_final_b64_string" : "canva_resize_base64",
+    "output_final_b64_string": "output_final_b64_string", 
+    "face_shape": "oval",
+    "face_shape_description": "Description of the face shape",
+    "eyebrow_recommendation": "Recommendation for eyebrow style",
+    "product_recommendation": "Product recommendations",
+    "trend_recommendation": "Trending eyebrow styles"
+  }
+  ```
 
-* message: Thông báo thành công.
+### Chi tiết tham số Request Body:
 
-* output_image_path: Chuỗi base64 của ảnh đầu ra.
+#### Tham số chính:
+- `input_image`: Ảnh đầu vào ở định dạng base64 string
+- `eyebrow_left_path`: Ảnh lông mày trái ở định dạng base64 string
 
-* face_shape: Hình dạng khuôn mặt được phát hiện.
+#### Tham số trang điểm:
+| Tham số | Mô tả | Giá trị mặc định | Bước nhảy | Phạm vi |
+|---------|-------|-----------------|-----------|---------|
+| `apply_makeup` | Bật/tắt tính năng trang điểm | `false` | N/A | `true`/`false` |
 
-# API Endpoints
+#### Tham số lông mày:
+| Tham số | Mô tả | Giá trị mặc định | Bước nhảy | Phạm vi |
+|---------|-------|-----------------|-----------|---------|
+| `remove_eyebrows` | Bật/tắt tính năng xóa lông mày hiện có | `false` | N/A | `true`/`false` |
+| `definition` | Chế độ làm sắc nét | `"SHARPEN"` | N/A | `"SHARPEN"` hoặc `"SMOOTH"` |
+| `color_eyebrow` | Điều chỉnh màu lông mày | `0` | N/A | `0` hoặc `1` . `Trong đó (0 là màu đen, 1 là màu nâu)`|
 
-Adjust Endpoint
-URL: http://localhost:5000/adjust
+#### Tham số nâng cao thay đổi vị trí và kích thước:
+| Tham số | Mô tả | Giá trị mặc định | Bước nhảy | Phạm vi |
+|---------|-------|-----------------|-----------|---------|
+| `show_landmarks` | Hiển thị các điểm mốc và tỷ lệ vàng trên khuôn mặt | `false` | N/A | `true`/`false` |
+| `adjust_params.left/right.width_scale` | Tỷ lệ chiều rộng | `1.2` | `0.1` | `0.5` đến `2.0` |
+| `adjust_params.left/right.height_scale` | Tỷ lệ chiều cao | `1.2` | `0.1` | `0.5` đến `2.0` |
+| `adjust_params.left/right.horizontal_offset` | Độ dịch chuyển ngang (pixel) | `0` | `1` | `-50` đến `50` |
+| `adjust_params.left/right.vertical_offset` | Độ dịch chuyển dọc (pixel) | `0` | `1` | `-50` đến `50` |
+| `adjust_params.left.rotation_angle` | Góc xoay (độ) | `8` | `1` | `-45` đến `45` |
+| `adjust_params.right.rotation_angle` | Góc xoay (độ) | `-8` | `1` | `-45` đến `45` |
 
-# Method: POST
 
-# Description: Áp dụng các điều chỉnh khác nhau lên hình ảnh đầu vào.
+### Chi tiết phản hồi:
 
-# Parameters:
+- `message`: Thông báo trạng thái AI system sucess/fail
+- `input_final_b64_string` :  Ảnh đầu vào đã resize dưới dạng base64 
+- `output_final_b64_string`: Ảnh kết quả dưới dạng base64 
+- `face_shape`: Hình dạng khuôn mặt được phát hiện (oval, round, square, heart, diamond, oblong, triangle)
+- `face_shape_description`: Mô tả chi tiết về hình dạng khuôn mặt
+- `eyebrow_recommendation`: Gợi ý kiểu chân mày phù hợp với khuôn mặt
+- `product_recommendation`: Gợi ý sản phẩm phù hợp với khuôn mặt
+- `trend_recommendation`: Xu hướng lông mày đang thịnh hành phù hợp với khuôn mặt
 
-1. input_image_path (str): Đường dẫn đến hình ảnh đầu vào dạng base64
 
-2. output_image_path (str): Đường dẫn để lưu hình ảnh đầu ra dạng base64
+## Note thêm: Hướng dẫn các tham số điều chỉnh lông mày
 
-3. patch_path (str): Đường dẫn đến hình ảnh patch dùng để xóa chân mày dạng base64
+### Điều chỉnh màu lông mày (`color_eyebrow`)
+- `-4.0`: Tông màu xanh dương
+- `-2.0`: Tông màu đen xanh
+- `0.0`: Màu đen hoàn toàn
+- `1.0`: Màu gốc của lông mày (không điều chỉnh)
+- `2.0`: Tăng độ bão hòa màu
+- `4.0`: Tông màu đỏ
 
-4. eyebrow_left_path (str): Đường dẫn đến hình ảnh chân mày trái dạng base64
+### Điều chỉnh góc xoay (`rotation_angle`)
+- Góc dương: Xoay ngược chiều kim đồng hồ
+- Góc âm: Xoay theo chiều kim đồng hồ
 
-5. eyebrow_right_path (str): Đường dẫn đến hình ảnh chân mày phải. Hiện tại chỉ nên để null
 
-6. features (list): Danh sách các đặc điểm để áp dụng trang điểm (mặc định: ['lips', 'skin', 'blush']).
+## Khởi chạy ứng dụng
 
-7. color_skin (float): Hệ số để điều chỉnh màu da (mặc định: 0.75). Range: [0, 10]
+### Sử dụng Docker
+```bash
+# Xây dựng image
+docker build -t beauty-ai-app .
 
-8. show_landmarks (bool): Có hiển thị các điểm đặc trưng trên khuôn mặt không (mặc định: False). Giá trị: True hoặc False
+# Chạy container
+docker run -p 5000:5000 beauty-ai-app
+```
 
-9. remove_eyebrows (bool): Có xóa chân mày không (mặc định: false). Giá trị: True hoặc False
+### Sử dụng Docker Compose
+```bash
+# Xây dựng và chạy
+docker compose build
+docker compose up -d
+```
 
-10. apply_makeup (bool): Có áp dụng trang điểm không (mặc định: false). Giá trị: True hoặc False
+### Chạy trực tiếp
+```bash
+# Cài đặt dependencies
+pip install -r requirements.txt
 
-11. color_lips (list): Màu sắc cho môi (mặc định: [174, 86, 84]). Dạng: [R, G, B]
-
-12. color_blush (list): Màu sắc cho má hồng (mặc định: [174, 86, 84]). Dạng: [R, G, B]
-
-13. color_eyebrow (float): Màu sắc cho chân mày (mặc định: 1). Giá trị [-4, 4] bước nhảy là 0.5 Trong đó: -4 là màu xanh dương, 0 là màu đen, 1 là màu hiện tại 4 là màu đỏ
-
-# Các tham số điều chỉnh:
-
-1. definition (int): Định nghĩa mức độ rõ nét. Giá trị: "SHARPEN" hoặc "SMOOTH". Mặc định: SHARPEN
-
-2. resize_horizontal (int): Kích thước ngang. Range: [-300, +300]. Mặc định: 50
-
-3. resize_vertical (int): Kích thước dọc. Range: [0, +300]. Mặc định: 90
-
-4. resize_position_up (int): Vị trí di chuyển lên. Range: [-300, +300]. Mặc định: -40
-
-5. resize_position_left (int): Vị trí di chuyển sang trái. Range: [-300, +300]. Mặc định: -35
-
-6. resize_position_right (int): Vị trí di chuyển sang phải. Range: [-300, +300]. Mặc định: -35
-
-7. rotate_left (int): Góc xoay sang trái. Range: [-360, +360]. Mặc định: 0
-
-8. rotate_right (int): Góc xoay sang phải. Range: [-360, +360]. Mặc định: 0
-
-# Ví dụ 1: Điều chỉnh resize_horizontal (int): Kích thước ngang.
-
-{
-"input_image_path": "",
-"patch_path": "",
-"eyebrow_left_path": "",
-"eyebrow_right_path": "",
-"output_image_path": "data/output_images/portrait_new_eyebrows",
-"apply_makeup": false,
-"color_skin": 0.9, // nếu apply_makeup = true thì điều chỉnh cường độ sáng
-"remove_eyebrows": false,
-"features": [
-"lips",
-"skin",
-"blush"
-],
-"show_landmarks": false
-"definition": 0
-"resize_horizontal": 130
-}
-
-# Ví dụ 2: Điều chỉnh resize_vertical (int): Kích thước dọc: nếu trước đó nếu đã điều chỉnh ở Ví dụ 1 thì qua Ví dụ 2 vẫn giữ "resize_horizontal": 130. Bởi vì có tính năng duy trì và cập nhật trạng thái của các tham số điều chỉnh
-
-{
-"input_image_path": "",
-"patch_path": "",
-"eyebrow_left_path": "",
-"eyebrow_right_path": "",
-"output_image_path": "data/output_images/portrait_new_eyebrows",
-"apply_makeup": false,
-"color_skin": 0.9, // nếu apply_makeup = true thì điều chỉnh cường độ sáng
-"remove_eyebrows": false,
-"features": [
-"lips",
-"skin",
-"blush"
-],
-"show_landmarks": false
-"definition": 0
-"resize_vertical": 200
-}
-
-# Good luck
+# Chạy ứng dụng
+python app.py
+```
