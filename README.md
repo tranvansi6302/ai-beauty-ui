@@ -36,7 +36,7 @@ Backend cung cấp các API endpoints sau:
   **Ví dụ**:
   {
     "input_image": "base64_image_data",
-    "eyebrow_left_path": "base64_eyebrow_image_data",
+    "eyebrow_left_path": 1,
     "apply_makeup": true,
     "remove_eyebrows": true,
     "definition": "SHARPEN",
@@ -78,7 +78,7 @@ Backend cung cấp các API endpoints sau:
 
 #### Tham số chính:
 - `input_image`: Ảnh đầu vào ở định dạng base64 string
-- `eyebrow_left_path`: Ảnh lông mày trái ở định dạng base64 string
+- `eyebrow_left_path`: Ảnh lông mày trái: 1 là mặc định, 2 là người dùng lựa chọn chân mày khác mặc định
 
 #### Tham số trang điểm:
 | Tham số | Mô tả | Giá trị mặc định | Bước nhảy | Phạm vi |
@@ -114,7 +114,8 @@ Backend cung cấp các API endpoints sau:
 - `eyebrow_recommendation`: Gợi ý kiểu chân mày phù hợp với khuôn mặt
 - `product_recommendation`: Gợi ý sản phẩm phù hợp với khuôn mặt
 - `trend_recommendation`: Xu hướng lông mày đang thịnh hành phù hợp với khuôn mặt
-
+- `eyebrow_1`: Ảnh chân mày dưới dạng base64 
+- `eyebrow_2`: Ảnh chân mày dưới dạng base64 
 
 ## Note thêm: Hướng dẫn các tham số điều chỉnh lông mày
 
